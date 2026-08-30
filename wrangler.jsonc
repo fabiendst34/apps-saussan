@@ -31,7 +31,7 @@
     "SITE_URL": "https://apps-saussan.fabien-73c.workers.dev",
     "SITE_NAME": "APPS — Association des Parents des Pitchouns Saussannais",
     "CONTACT_EMAIL": "apps.saussan@gmail.com",
-    "MAIL_FROM": "no-reply@apps-saussan.fr",
+    "MAIL_FROM": "apps.saussan@gmail.com",
     "MAIL_FROM_NAME": "APPS Saussan",
     "ALLOW_INDEXING": "false",
 
