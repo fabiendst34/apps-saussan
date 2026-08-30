@@ -2,6 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "apps-saussan",
   "main": "src/index.js",
+
+  // Compte Cloudflare personnel de Fabien (et non celui de Kevin) :
+  // fixe ici pour lever l'ambiguite entre les deux comptes accessibles.
+  "account_id": "73c47f960a8baffb72252952ab8f16f5",
+
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -18,7 +23,7 @@
     {
       "binding": "DB",
       "database_name": "apps-saussan",
-      "database_id": "A_REMPLACER_APRES_wrangler_d1_create"
+      "database_id": "6e054e9b-f7cf-4367-8e08-24668b4aae71"
     }
   ],
 
