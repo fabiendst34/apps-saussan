@@ -52,11 +52,11 @@ export function isoPlus(seconds) {
 
 // --- Dates -----------------------------------------------------------
 
-const MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const MOIS_ACC = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
 export const MOIS_NOMS = MOIS_ACC;
 export const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -81,10 +81,15 @@ export function todayKey() {
   return toDateKey(new Date());
 }
 
-/** '2026-09-14' -> 'Lundi 14 septembre 2026' */
-export function formatDateLong(iso) {
+/**
+ * '2026-09-14' -> 'lundi 14 septembre 2026'.
+ * En francais les noms de jours et de mois restent en minuscules ; la
+ * majuscule n'est ajoutee que lorsque la date ouvre une phrase.
+ */
+export function formatDateLong(iso, { majuscule = true } = {}) {
   const d = parseDate(iso);
-  return `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`;
+  const texte = `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`;
+  return majuscule ? texte[0].toUpperCase() + texte.slice(1) : texte;
 }
 
 /** '2026-09-14' -> '14 sept. 2026' */
@@ -176,4 +181,69 @@ export function initials(user) {
   const a = (user?.first_name || user?.email || '?').trim()[0] || '?';
   const b = (user?.last_name || '').trim()[0] || '';
   return (a + b).toUpperCase();
+}
+
+// --- Articles --------------------------------------------------------
+
+/** 'Marché de Noël 2026' -> 'marche-de-noel-2026' */
+export function slugifier(texte) {
+  return String(texte)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // retire les accents
+    .toLowerCase()
+    .replace(/['’]/g, ' ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 70) || 'article';
+}
+
+/**
+ * Mise en forme du corps d'un article. Tout est echappe d'abord : le balisage
+ * reconnu ci-dessous est le seul HTML qui puisse en sortir.
+ *
+ *   ## Titre        -> sous-titre
+ *   - element       -> liste a puces
+ *   **gras**        -> gras
+ *   *italique*      -> italique
+ *   ligne vide      -> nouveau paragraphe
+ *   https://…       -> lien
+ */
+export function texteArticle(valeur) {
+  const lignes = esc(valeur).replace(/\r\n/g, '\n').split('\n');
+  const sortie = [];
+  let paragraphe = [];
+  let liste = [];
+
+  const enligne = (t) => t
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  const viderParagraphe = () => {
+    if (paragraphe.length) { sortie.push(`<p>${enligne(paragraphe.join('<br>'))}</p>`); paragraphe = []; }
+  };
+  const viderListe = () => {
+    if (liste.length) { sortie.push(`<ul>${liste.map((i) => `<li>${enligne(i)}</li>`).join('')}</ul>`); liste = []; }
+  };
+
+  for (const ligne of lignes) {
+    const t = ligne.trim();
+    if (!t) { viderParagraphe(); viderListe(); continue; }
+
+    const titre = t.match(/^(#{2,3})\s+(.*)$/);
+    if (titre) {
+      viderParagraphe(); viderListe();
+      const niveau = titre[1].length === 2 ? 2 : 3;
+      sortie.push(`<h${niveau}>${enligne(titre[2])}</h${niveau}>`);
+      continue;
+    }
+
+    const puce = t.match(/^[-*]\s+(.*)$/);
+    if (puce) { viderParagraphe(); liste.push(puce[1]); continue; }
+
+    viderListe();
+    paragraphe.push(t);
+  }
+  viderParagraphe();
+  viderListe();
+  return sortie.join('');
 }

@@ -125,3 +125,49 @@ CREATE TABLE IF NOT EXISTS messages (
   read_at     TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_messages_date ON messages(created_at DESC);
+
+-- ---------------------------------------------------------------------
+--  Medias : images mises en avant des articles.
+--
+--  Le binaire est stocke dans D1 faute de R2 active sur le compte. Les
+--  images sont redimensionnees dans le navigateur avant l'envoi, ce qui
+--  garde les lignes sous quelques centaines de kilo-octets. Le jour ou R2
+--  est active, seul src/lib/medias.js change : le reste du code passe par
+--  son interface.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS medias (
+  id            TEXT PRIMARY KEY,
+  content_type  TEXT NOT NULL,
+  taille        INTEGER NOT NULL,
+  largeur       INTEGER,
+  hauteur       INTEGER,
+  nom_origine   TEXT NOT NULL DEFAULT '',
+  donnees       BLOB NOT NULL,
+  created_at    TEXT NOT NULL,
+  created_by    TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- ---------------------------------------------------------------------
+--  Articles « À la une »
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS articles (
+  id            TEXT PRIMARY KEY,
+  slug          TEXT NOT NULL UNIQUE,
+  title         TEXT NOT NULL,
+  chapo         TEXT NOT NULL DEFAULT '',   -- resume affiche dans les listes
+  body          TEXT NOT NULL DEFAULT '',
+  image_id      TEXT REFERENCES medias(id) ON DELETE SET NULL,
+  image_alt     TEXT NOT NULL DEFAULT '',
+  status        TEXT NOT NULL DEFAULT 'brouillon' CHECK (status IN ('brouillon','publie')),
+  is_featured   INTEGER NOT NULL DEFAULT 0,  -- remonte dans « À la une » sur l'accueil
+  published_at  TEXT,
+  created_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT NOT NULL,
+  updated_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  updated_at    TEXT NOT NULL,
+  deleted_at    TEXT,
+  deleted_by    TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_articles_public ON articles(status, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
+CREATE INDEX IF NOT EXISTS idx_articles_deleted ON articles(deleted_at);

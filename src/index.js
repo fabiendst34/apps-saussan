@@ -9,6 +9,8 @@ import * as pub from './routes/public.js';
 import * as auth from './routes/auth.js';
 import * as espace from './routes/espace.js';
 import * as admin from './routes/admin.js';
+import * as articles from './routes/articles.js';
+import { servirImage } from './lib/medias.js';
 
 /**
  * Protection CSRF de premier niveau : tout POST doit provenir du site lui-meme.
@@ -70,6 +72,7 @@ export default {
           case '/':                  return pub.accueil(env, url, user);
           case '/association':       return pub.association(env, url, user);
           case '/evenements':        return pub.evenements(env, url, user);
+          case '/actualites':        return articles.actualites(env, url, user);
           case '/adherer':           return pub.adherer(env, url, user);
           case '/contact':           return pub.contact(env, url, user);
           case '/mentions-legales':  return pub.mentionsLegales(env, url, user);
@@ -77,6 +80,17 @@ export default {
         }
       }
       if (methode === 'POST' && chemin === '/contact') return pub.contactPost(env, request, url, user);
+
+      // /actualites/:slug
+      if (seg[0] === 'actualites' && seg[1] && !seg[2] && methode === 'GET') {
+        const reponse = await articles.articlePublic(env, url, user, seg[1]);
+        return reponse || pub.page404(env, url, user);
+      }
+
+      // Images des articles, servies depuis le stockage de medias.
+      if (seg[0] === 'medias' && seg[1] && !seg[2] && methode === 'GET') {
+        return servirImage(env, request, seg[1]);
+      }
 
       // --- Authentification ---------------------------------------
       if (chemin === '/espace/connexion') {
@@ -121,6 +135,32 @@ export default {
         }
         if (suite === 'supprimer' && methode === 'POST') return espace.supprimerEvenementPost(env, request, url, user, session, id);
         if (suite === 'restaurer' && methode === 'POST') return espace.restaurerEvenementPost(env, request, url, user, session, id);
+      }
+
+      if (chemin === '/espace/articles' && methode === 'GET') return articles.listeArticles(env, url, user);
+
+      if (chemin === '/espace/articles/nouveau') {
+        return methode === 'POST'
+          ? articles.creerArticlePost(env, request, url, user, session)
+          : articles.formulaireArticle(env, url, user, session);
+      }
+
+      // /espace/articles/:id[/modifier|/supprimer|/restaurer]
+      if (seg[0] === 'espace' && seg[1] === 'articles' && seg[2]) {
+        const id = seg[2];
+        const suite = seg[3] || '';
+
+        if (!suite && methode === 'GET') {
+          const reponse = await articles.detailArticle(env, url, user, session, id);
+          return reponse || pub.page404(env, url, user);
+        }
+        if (suite === 'modifier') {
+          if (methode === 'POST') return articles.modifierArticlePost(env, request, url, user, session, id);
+          const a = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND deleted_at IS NULL').bind(id).first();
+          return a ? articles.formulaireArticle(env, url, user, session, a) : pub.page404(env, url, user);
+        }
+        if (suite === 'supprimer' && methode === 'POST') return articles.supprimerArticlePost(env, request, url, user, session, id);
+        if (suite === 'restaurer' && methode === 'POST') return articles.restaurerArticlePost(env, request, url, user, session, id);
       }
 
       if (chemin === '/espace/compte' && methode === 'GET') return espace.monCompte(env, url, user, session);

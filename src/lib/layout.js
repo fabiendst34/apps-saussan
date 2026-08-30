@@ -17,6 +17,7 @@ export const LOGO_SVG = `<svg class="marque__logo" viewBox="0 0 120 120" aria-hi
 const NAV_PUBLIQUE = [
   ['/', 'Accueil'],
   ['/association', "L'association"],
+  ['/actualites', 'Actualités'],
   ['/evenements', 'Événements'],
   ['/adherer', 'Nous rejoindre'],
   ['/contact', 'Contact'],
@@ -24,7 +25,8 @@ const NAV_PUBLIQUE = [
 
 const NAV_ESPACE = [
   ['/espace', 'Calendrier'],
-  ['/espace/evenements', 'Liste des événements'],
+  ['/espace/evenements', 'Événements'],
+  ['/espace/articles', 'Articles'],
   ['/espace/journal', 'Mon activité'],
   ['/espace/compte', 'Mon compte'],
 ];
@@ -98,6 +100,7 @@ function pied(env) {
         <ul class="pied__liens">
           <li><a href="/">Accueil</a></li>
           <li><a href="/association">L'association</a></li>
+          <li><a href="/actualites">Actualités</a></li>
           <li><a href="/evenements">Événements</a></li>
           <li><a href="/adherer">Nous rejoindre</a></li>
           <li><a href="/espace/connexion">Espace membres</a></li>
@@ -209,6 +212,11 @@ export const FLASH = {
   'event-modifie': "L'événement a bien été modifié.",
   'event-supprime': "L'événement a été supprimé.",
   'event-restaure': "L'événement a été restauré.",
+  'article-cree': "L'article a été enregistré comme brouillon.",
+  'article-publie': "L'article est publié : il est visible sur le site.",
+  'article-modifie': "L'article a bien été modifié.",
+  'article-supprime': "L'article a été supprimé du site.",
+  'article-restaure': "L'article a été restauré.",
   'compte-cree': 'Le compte a été créé et l’e-mail d’activation envoyé.',
   'compte-cree-sans-mail': "Le compte a été créé, mais l'e-mail d'activation n'a pas pu être envoyé. Utilisez le bouton « Renvoyer l’invitation ».",
   'compte-modifie': 'Le compte a été mis à jour.',

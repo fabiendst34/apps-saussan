@@ -5,6 +5,7 @@ import { page, messagesFlash, bandeau, LOGO_SVG } from '../lib/layout.js';
 import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
 import { logAudit } from '../lib/audit.js';
 import { sendEmail, contactNotificationEmail } from '../lib/email.js';
+import { sectionALaUne } from './articles.js';
 
 export const CATEGORIES = {
   reunion: 'Réunion',
@@ -58,6 +59,7 @@ async function evenementsPublics(env, { limit = 100, passes = false } = {}) {
 
 export async function accueil(env, url, user) {
   const prochains = await evenementsPublics(env, { limit: 3 });
+  const alaune = await sectionALaUne(env);
 
   const listeEvenements = prochains.length
     ? `<div class="pile">${prochains.map((e) => carteEvenement(e, `/evenements#ev-${e.id}`)).join('')}</div>`
@@ -78,7 +80,9 @@ export async function accueil(env, url, user) {
   <div class="hero__visuel">${LOGO_SVG.replace('class="marque__logo"', 'class="mascotte"')}</div>
 </div></section>
 
-<section class="section section--blanc">
+${alaune}
+
+<section class="section${alaune ? '' : ' section--blanc'}">
   <div class="conteneur">
     <h2 class="missions__titre">Une association, trois raisons d'être</h2>
     <dl class="missions">

@@ -16,6 +16,10 @@ export const ACTION_LABELS = {
   'event.update': 'Événement modifié',
   'event.delete': 'Événement supprimé',
   'event.restore': 'Événement restauré',
+  'article.create': 'Article écrit',
+  'article.update': 'Article modifié',
+  'article.delete': 'Article supprimé',
+  'article.restore': 'Article restauré',
   'user.create': 'Compte créé',
   'user.update': 'Compte modifié',
   'user.delete': 'Compte supprimé',
@@ -93,4 +97,6 @@ export const FIELD_LABELS = {
   end_time: 'Heure de fin', all_day: 'Journée entière', is_public: 'Visible publiquement',
   email: 'E-mail', first_name: 'Prénom', last_name: 'Nom', role: 'Rôle',
   status: 'Statut', phone: 'Téléphone', password_hash: 'Mot de passe', title_fn: 'Fonction',
+  chapo: 'Résumé', body: 'Texte', image_id: 'Image', image_alt: "Description de l'image",
+  is_featured: 'À la une', slug: 'Adresse',
 };

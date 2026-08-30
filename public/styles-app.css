@@ -384,3 +384,124 @@ a.tuile:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
   .hero .rang { flex-direction: column; align-items: stretch; }
   .hero .rang .btn { width: 100%; }
 }
+
+/* =====================================================================
+   Articles « À la une »
+   ===================================================================== */
+
+/* Un article dominant, deux en appui : la hierarchie evite la rangee
+   de vignettes interchangeables. */
+.alaune { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.5rem; align-items: start; }
+.alaune--seul { grid-template-columns: minmax(0, 720px); }
+.alaune__cote { display: grid; gap: 1.5rem; }
+@media (max-width: 880px) { .alaune { grid-template-columns: 1fr; } }
+
+.grille-articles { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.75rem; }
+
+.article-carte {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--blanc); border: 1px solid var(--bord); border-radius: var(--r-lg);
+  overflow: hidden; box-shadow: var(--ombre-sm);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.article-carte:hover { transform: translateY(-3px); box-shadow: var(--ombre-md); border-color: var(--bord-fort); }
+
+.article-carte__image {
+  display: block; width: 100%; aspect-ratio: 16 / 9;
+  object-fit: cover; background: var(--jaune-voile);
+}
+.article-carte__image--vide {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--jaune); background: var(--jaune-voile);
+}
+.article-carte__corps { padding: 1.25rem 1.35rem 1.4rem; }
+.article-carte__date {
+  font-size: .8rem; font-weight: 800; color: var(--gris);
+  text-transform: uppercase; letter-spacing: .4px; margin: 0 0 .35rem;
+}
+.article-carte__titre {
+  font-family: 'Baloo 2', sans-serif; font-size: 1.25rem; font-weight: 700;
+  color: var(--noir); margin: 0 0 .4rem; line-height: 1.25; text-wrap: balance;
+}
+.article-carte__chapo { color: var(--gris); font-size: .95rem; margin: 0 0 .9rem; }
+.article-carte .lien-fleche { font-size: .88rem; }
+.article-carte:hover .lien-fleche { color: var(--jaune-fonce); }
+.article-carte:hover .lien-fleche .ico { transform: translateX(3px); }
+
+/* La carte dominante : image plus haute, titre plus fort. */
+.article-carte--grande .article-carte__image { aspect-ratio: 3 / 2; }
+.article-carte--grande .article-carte__corps { padding: 1.6rem 1.75rem 1.8rem; }
+.article-carte--grande .article-carte__titre { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); }
+.article-carte--grande .article-carte__chapo { font-size: 1.05rem; }
+@media (max-width: 880px) {
+  .article-carte--grande .article-carte__image { aspect-ratio: 16 / 9; }
+}
+
+/* --- Page d'un article -------------------------------------------- */
+
+.article__titre { margin-bottom: .6rem; text-wrap: balance; }
+.article__signature {
+  display: flex; align-items: center; gap: .45rem; flex-wrap: wrap;
+  color: var(--gris); font-size: .92rem; font-weight: 600; margin-bottom: 1.25rem;
+}
+.article__auteur { padding-left: .5rem; border-left: 1px solid var(--bord-fort); }
+
+.article__figure { margin: 2rem 0; }
+.article__figure img {
+  display: block; width: 100%; height: auto; max-height: 62vh; object-fit: cover;
+  border-radius: var(--r-lg); background: var(--jaune-voile);
+}
+.article__figure figcaption {
+  margin-top: .6rem; font-size: .88rem; color: var(--gris); text-align: center;
+}
+
+.article__corps { font-size: 1.05rem; }
+.article__corps h2 { font-size: 1.5rem; margin: 2rem 0 .6rem; }
+.article__corps h3 { font-size: 1.2rem; margin: 1.6rem 0 .5rem; }
+.article__corps p { margin-bottom: 1.1em; }
+.article__corps ul { padding-left: 1.3rem; margin-bottom: 1.1em; }
+.article__corps li { margin-bottom: .35rem; }
+
+/* --- Redaction ----------------------------------------------------- */
+
+.vignette {
+  width: 56px; height: 42px; border-radius: var(--r-xs); object-fit: cover;
+  background: var(--jaune-voile); flex-shrink: 0;
+}
+.vignette--vide {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--jaune); border: 1px dashed var(--bord-fort);
+}
+
+.apercu-image { margin-bottom: 1.15rem; }
+.apercu-image img {
+  display: block; width: 100%; max-width: 320px; height: auto; aspect-ratio: 16 / 9;
+  object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--bord);
+}
+
+input[type="file"] {
+  width: 100%; font-family: inherit; font-size: .95rem; color: var(--gris);
+  background: var(--creme); border: 1.5px dashed var(--bord-fort);
+  border-radius: var(--r-sm); padding: .7rem .85rem; cursor: pointer;
+}
+input[type="file"]:hover { border-color: var(--jaune); background: var(--jaune-voile); }
+input[type="file"]::file-selector-button {
+  font-family: inherit; font-weight: 800; font-size: .85rem;
+  background: var(--noir); color: var(--jaune); border: 0;
+  border-radius: var(--r-pill); padding: .4rem .9rem; margin-right: .8rem; cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover { background: #2E2A26; }
+
+.champ__aide code {
+  background: var(--jaune-voile); border: 1px solid var(--jaune-pale);
+  border-radius: 4px; padding: .05rem .3rem; font-size: .92em;
+}
+
+/* Un seul article a la une : la carte s'etale en largeur plutot que de
+   laisser la moitie droite vide. */
+@media (min-width: 881px) {
+  .alaune--seul { grid-template-columns: minmax(0, 1fr); }
+  .alaune--seul .article-carte--grande { display: grid; grid-template-columns: 1.1fr 1fr; align-items: stretch; }
+  .alaune--seul .article-carte--grande .article-carte__image { height: 100%; aspect-ratio: auto; min-height: 300px; }
+  .alaune--seul .article-carte--grande .article-carte__corps { align-self: center; padding: 2rem 2.25rem; }
+}

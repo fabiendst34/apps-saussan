@@ -3,8 +3,8 @@
 Site public + espace membres avec calendrier partagé + back-office d'administration,
 sur Cloudflare Workers et D1.
 
-- **Partie publique** — accueil, l'association, événements, adhésion en ligne (widget HelloAsso), contact, mentions légales, confidentialité.
-- **Espace membres** (connexion e-mail / mot de passe) — calendrier de l'année, création / modification / suppression d'événements, chaque action étant tracée.
+- **Partie publique** — accueil avec section « À la une », actualités, l'association, événements, adhésion en ligne (widget HelloAsso), contact, mentions légales, confidentialité.
+- **Espace membres** (connexion e-mail / mot de passe) — calendrier de l'année, création / modification / suppression d'événements, rédaction d'articles « À la une » avec image mise en avant, chaque action étant tracée.
 - **Administration** (réservée au rôle `admin`) — création et gestion des comptes, envoi des e-mails d'activation, journal d'audit complet avec filtres et export CSV, messages reçus.
 
 Aucune dépendance applicative : rendu HTML côté serveur, JavaScript minimal côté client.
@@ -124,6 +124,26 @@ ne s'applique qu'aux suivants.
 
 ---
 
+## Images des articles
+
+R2 n'étant pas activé sur le compte Cloudflare, les images sont stockées **en base**,
+dans la table `medias`. Avant l'envoi, le navigateur les redimensionne à 1600 px de côté
+au maximum et les recompresse en JPEG : une photo de téléphone de 4 Mo arrive à 200 ou
+300 Ko. Le serveur refuse au-delà de 1,2 Mo.
+
+Ce choix a été vérifié en production : un objet de 700 Ko s'insère et se ressert
+correctement. Il convient à quelques centaines d'articles illustrés.
+
+Pour passer à R2 le jour où il sera activé, seul `src/lib/medias.js` est à réécrire :
+tout le reste du code passe par ses quatre fonctions (`enregistrerImage`, `lireImage`,
+`supprimerImage`, `servirImage`).
+
+Attention à un piège : D1 restitue les colonnes BLOB sous forme de **tableau de nombres**,
+et non d'`ArrayBuffer`. Sans conversion en `Uint8Array`, la réponse HTTP part avec un corps
+vide et un statut 200 — l'erreur est silencieuse.
+
+---
+
 ## Architecture
 
 ```
@@ -134,11 +154,14 @@ src/
     auth.js           PBKDF2, sessions, CSRF, jetons à usage unique
     audit.js          écriture du journal, calcul des différences
     email.js          envoi Mailjet et gabarits des e-mails
+    medias.js         stockage des images (voir « Images » ci-dessous)
+    icones.js         jeu d'icônes SVG maison
     layout.js         squelette HTML, navigations, pied de page
   routes/
     public.js         site public
     auth.js           connexion, activation, mot de passe oublié
     espace.js         calendrier, CRUD événements, compte personnel
+    articles.js       articles « À la une », côté membres et côté public
     admin.js          comptes, journal d'audit, messages
 db/
   schema.sql          schéma D1 (idempotent)
@@ -183,7 +206,8 @@ avec les informations réelles de l'association :
 
 - `src/routes/public.js` — page **L'association** : composition du bureau, date de
   l'assemblée générale, présentation.
-- `src/routes/public.js` — page **Accueil** : les trois chiffres clés de la section jaune.
+- Les articles de démonstration du jeu de test (`db/seed.sql`) sont fictifs : ils ne
+  servent qu'au développement local et ne partent jamais en production.
 - `src/routes/public.js` — **mentions légales** : nom du directeur de la publication.
 - Le lien du widget HelloAsso pointe sur la campagne « adhesion-2026-2027 » : il devra être
   mis à jour à chaque nouvelle année scolaire.

@@ -9,6 +9,8 @@
 -- =====================================================================
 
 DELETE FROM audit_log;
+DELETE FROM articles;
+DELETE FROM medias;
 DELETE FROM messages;
 DELETE FROM tokens;
 DELETE FROM sessions;
@@ -87,3 +89,53 @@ INSERT INTO messages (id, name, email, subject, body, created_at, ip, read_at) V
  ('msg-1', 'Julie Bertrand', 'julie.bertrand@example.com', 'Adhésion en cours d''année',
   'Bonjour,' || char(10) || char(10) || 'Nous venons d''emménager à Saussan et notre fille entre en CE1. Est-il possible d''adhérer à l''association en cours d''année ?' || char(10) || char(10) || 'Merci d''avance,' || char(10) || 'Julie',
   '2026-08-28T18:42:00.000Z', '82.64.12.9', NULL);
+
+-- Articles de demonstration. Sans image : le gabarit affiche alors une
+-- vignette de repli, ce qui permet de voir aussi cet etat.
+INSERT INTO articles (id, slug, title, chapo, body, image_id, image_alt, status, is_featured,
+                      published_at, created_by, created_at, updated_by, updated_at) VALUES
+ ('ar-1', 'le-marche-de-noel-a-rapporte-1240-euros',
+  'Le marché de Noël a rapporté 1 240 €',
+  'Merci aux 40 familles venues tenir les stands : la classe découverte des CM est financée.',
+  '## Une réussite collective' || char(10) || char(10) ||
+  'Le marché de Noël s''est tenu **samedi 12 décembre** dans la cour de l''école élémentaire, sous un soleil inespéré.' || char(10) || char(10) ||
+  '- 18 stands tenus par les enfants' || char(10) ||
+  '- 240 crêpes vendues' || char(10) ||
+  '- 1 240 € de bénéfice' || char(10) || char(10) ||
+  'La totalité de cette somme part vers la classe découverte des CM1-CM2 en Cévennes, au mois de mai.' || char(10) || char(10) ||
+  'Un grand merci à *toutes les familles* qui ont donné de leur temps, prêté du matériel ou simplement fait un tour.',
+  NULL, '', 'publie', 1, '2026-08-25T10:00:00.000Z',
+  'u-admin', '2026-08-25T09:30:00.000Z', 'u-admin', '2026-08-25T10:00:00.000Z'),
+
+ ('ar-2', 'rentree-2026-ce-qui-change-a-la-cantine',
+  'Rentrée 2026 : ce qui change à la cantine',
+  'Nouveau prestataire, menus affichés à l''avance et une commission repas ouverte aux parents.',
+  'La mairie a retenu un nouveau prestataire pour la restauration scolaire à compter de septembre.' || char(10) || char(10) ||
+  '## Les menus à l''avance' || char(10) || char(10) ||
+  'Les menus seront désormais affichés quatre semaines à l''avance, à l''entrée des deux écoles et sur le panneau du centre socio-culturel.' || char(10) || char(10) ||
+  '## Une commission ouverte aux parents' || char(10) || char(10) ||
+  'Une commission repas se réunira chaque trimestre. Deux places y sont réservées aux parents d''élèves : faites-vous connaître auprès du bureau si le sujet vous intéresse.',
+  NULL, '', 'publie', 1, '2026-08-20T08:00:00.000Z',
+  'u-membre', '2026-08-19T20:15:00.000Z', 'u-membre', '2026-08-20T08:00:00.000Z'),
+
+ ('ar-3', 'appel-a-benevoles-pour-la-kermesse',
+  'Appel à bénévoles pour la kermesse',
+  'Une heure de votre temps suffit : il reste des créneaux sur les stands et à la buvette.',
+  'La kermesse de fin d''année se prépare et nous cherchons des bras.' || char(10) || char(10) ||
+  '- Tenue des stands de jeux, par créneaux d''une heure' || char(10) ||
+  '- Buvette et crêpes' || char(10) ||
+  '- Montage le vendredi soir, démontage le samedi en fin de journée' || char(10) || char(10) ||
+  'Aucune compétence particulière n''est requise, et vous n''êtes engagé que sur le créneau choisi. Écrivez-nous pour vous inscrire.',
+  NULL, '', 'publie', 0, '2026-08-10T17:30:00.000Z',
+  'u-membre', '2026-08-10T17:00:00.000Z', 'u-membre', '2026-08-10T17:30:00.000Z'),
+
+ ('ar-4', 'compte-rendu-du-conseil-d-ecole',
+  'Compte rendu du conseil d''école — brouillon',
+  'À relire par le bureau avant publication.',
+  'Points abordés : effectifs, travaux de la cour, projet piscine.',
+  NULL, '', 'brouillon', 0, NULL,
+  'u-admin', '2026-08-28T21:00:00.000Z', 'u-admin', '2026-08-28T21:00:00.000Z');
+
+INSERT INTO audit_log (created_at, actor_id, actor_email, actor_name, action, entity_type, entity_id, entity_label, changes, ip, user_agent) VALUES
+ ('2026-08-25T09:30:00.000Z', 'u-admin', 'admin@apps-saussan.fr', 'Fabien Dupont', 'article.create', 'article', 'ar-1', 'Le marché de Noël a rapporté 1 240 €', '', '192.168.1.10', 'Mozilla/5.0'),
+ ('2026-08-20T08:00:00.000Z', 'u-membre', 'membre@apps-saussan.fr', 'Camille Martin', 'article.update', 'article', 'ar-2', 'Rentrée 2026 : ce qui change à la cantine', '{"status":["brouillon","publie"]}', '192.168.1.22', 'Mozilla/5.0');
