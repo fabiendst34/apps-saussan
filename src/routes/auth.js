@@ -1,6 +1,6 @@
 // Parcours d'authentification : connexion, deconnexion, activation, mot de passe oublie.
 import { esc, html, redirect, field, isEmail, nowIso, withQuery } from '../lib/util.js';
-import { page, messagesFlash } from '../lib/layout.js';
+import { page, messagesFlash, bandeau } from '../lib/layout.js';
 import { logAudit } from '../lib/audit.js';
 import {
   verifyPassword, hashPassword, passwordProblem, createSession, destroySession,
@@ -24,9 +24,7 @@ function ecran(env, url, { titre, sousTitre, corps, chemin, lienBas = '' }) {
 }
 
 function erreurBloc(texte) {
-  return texte
-    ? `<div class="message message--erreur"><span class="message__icone">⚠️</span><span>${esc(texte)}</span></div>`
-    : '';
+  return texte ? bandeau('erreur', texte) : '';
 }
 
 const AIDE_MDP = 'Au moins 10 caractères, dont une lettre et un chiffre.';
@@ -112,9 +110,8 @@ export async function activationPage(env, url, erreur = null) {
   if (!info) {
     return ecran(env, url, {
       titre: 'Lien expiré',
-      corps: `<div class="message message--erreur"><span class="message__icone">⚠️</span>
-        <span>Ce lien d'activation n'est plus valable. Demandez au bureau de vous renvoyer une invitation.</span></div>
-        <a class="btn btn--fantome btn--bloc" href="/contact">Contacter le bureau</a>`,
+      corps: bandeau('erreur', "Ce lien d'activation n'est plus valable. Demandez au bureau de vous renvoyer une invitation.")
+        + '<a class="btn btn--fantome btn--bloc" href="/contact">Contacter le bureau</a>' ,
       chemin: '/espace/activation',
     });
   }
@@ -190,7 +187,7 @@ export function oubliPage(env, url, erreur = null) {
     titre: 'Mot de passe oublié',
     sousTitre: 'Nous vous envoyons un lien pour en choisir un nouveau.',
     corps, chemin: '/espace/mot-de-passe-oublie',
-    lienBas: '<a href="/espace/connexion">← Revenir à la connexion</a>',
+    lienBas: '<a class="lien-retour" href="/espace/connexion">Revenir à la connexion</a>',
   });
 }
 
@@ -219,9 +216,8 @@ export async function oubliPost(env, request, url) {
 
   return ecran(env, url, {
     titre: 'Vérifiez votre boîte mail',
-    corps: `<div class="message message--succes"><span class="message__icone">✅</span>
-      <span>Si un compte est associé à cette adresse, un lien de réinitialisation vient d'être envoyé. Il est valable 2 heures.</span></div>
-      <a class="btn btn--fantome btn--bloc" href="/espace/connexion">Revenir à la connexion</a>`,
+    corps: bandeau('succes', "Si un compte est associé à cette adresse, un lien de réinitialisation vient d'être envoyé. Il est valable 2 heures.")
+      + '<a class="btn btn--fantome btn--bloc" href="/espace/connexion">Revenir à la connexion</a>' ,
     chemin: '/espace/mot-de-passe-oublie',
   });
 }
@@ -232,9 +228,8 @@ export async function reinitPage(env, url, erreur = null) {
   if (!info) {
     return ecran(env, url, {
       titre: 'Lien expiré',
-      corps: `<div class="message message--erreur"><span class="message__icone">⚠️</span>
-        <span>Ce lien de réinitialisation n'est plus valable. Les liens expirent au bout de 2 heures.</span></div>
-        <a class="btn btn--principal btn--bloc" href="/espace/mot-de-passe-oublie">Demander un nouveau lien</a>`,
+      corps: bandeau('erreur', "Ce lien de réinitialisation n'est plus valable. Les liens expirent au bout de 2 heures.")
+        + '<a class="btn btn--principal btn--bloc" href="/espace/mot-de-passe-oublie">Demander un nouveau lien</a>' ,
       chemin: '/espace/reinitialisation',
     });
   }

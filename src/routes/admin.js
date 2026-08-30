@@ -4,7 +4,8 @@ import {
   esc, html, redirect, uuid, nowIso, field, isEmail, fullName, initials,
   formatDateTime, formatDateShort, todayKey, withQuery,
 } from '../lib/util.js';
-import { page, messagesFlash } from '../lib/layout.js';
+import { page, messagesFlash, bandeau } from '../lib/layout.js';
+import { icone } from '../lib/icones.js';
 import { logAudit, diff, ACTION_LABELS, actionTone, FIELD_LABELS } from '../lib/audit.js';
 import { issueToken, destroyUserSessions, checkCsrf } from '../lib/auth.js';
 import { sendEmail, activationEmail, resetEmail } from '../lib/email.js';
@@ -47,7 +48,7 @@ export async function tableauDeBord(env, url, user) {
   ${messagesFlash(url)}
   <div class="titre-page">
     <div><h1>Administration</h1><p>Vue d'ensemble de l'espace membres.</p></div>
-    <a class="btn btn--principal" href="/admin/comptes/nouveau">＋ Créer un compte</a>
+    <a class="btn btn--principal" href="/admin/comptes/nouveau">${icone('plus', { taille: 18 })}Créer un compte</a>
   </div>
 
   <div class="tuiles">
@@ -73,7 +74,7 @@ export async function tableauDeBord(env, url, user) {
     <div class="carte">
       <div class="rang rang--entre" style="margin-bottom:.5rem">
         <h2 style="font-size:1.2rem;margin:0">Dernières actions</h2>
-        <a class="btn btn--petit btn--fantome" href="/admin/journal">Tout le journal →</a>
+        <a class="lien-fleche" href="/admin/journal">Tout le journal ${icone('fleche_longue', { taille: 17 })}</a>
       </div>
       ${journal.results?.length ? journal.results.map(ligneAudit).join('')
         : '<p class="muet">Aucune action enregistrée.</p>'}
@@ -145,7 +146,7 @@ export async function listeComptes(env, url, user) {
   ${messagesFlash(url)}
   <div class="titre-page">
     <div><h1>Comptes</h1><p>${(results || []).length} compte${(results || []).length > 1 ? 's' : ''} affiché${(results || []).length > 1 ? 's' : ''}.</p></div>
-    <a class="btn btn--principal" href="/admin/comptes/nouveau">＋ Créer un compte</a>
+    <a class="btn btn--principal" href="/admin/comptes/nouveau">${icone('plus', { taille: 18 })}Créer un compte</a>
   </div>
 
   <div class="rang" style="margin-bottom:1.25rem">
@@ -160,7 +161,7 @@ export async function listeComptes(env, url, user) {
   ${lignes ? `<div class="tableau-enveloppe"><table>
       <thead><tr><th>Membre</th><th>Fonction</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
       <tbody>${lignes}</tbody></table></div>`
-    : `<div class="vide"><span class="vide__icone">👤</span><h3>Aucun compte</h3>
+    : `<div class="vide">${icone('personnes', { taille: 34, classe: 'vide__icone' })}<h3>Aucun compte</h3>
        <p>${q || statut ? 'Aucun résultat pour ce filtre.' : 'Créez le premier compte membre.'}</p></div>`}
 </div></section>`;
 
@@ -182,7 +183,7 @@ export function formulaireCompte(env, url, user, session, cible = null, erreur =
     : "Le membre recevra un e-mail l'invitant à choisir son mot de passe."}</p>
 
   <div class="carte" style="margin-top:1.5rem">
-    ${erreur ? `<div class="message message--erreur"><span class="message__icone">⚠️</span><span>${esc(erreur)}</span></div>` : ''}
+    ${erreur ? bandeau('erreur', erreur) : ''}
     <form method="post" action="${action}">
       ${csrfInput(session)}
       <div class="duo">
@@ -592,7 +593,7 @@ export async function journalAudit(env, url, user) {
   ${messagesFlash(url)}
   <div class="titre-page">
     <div><h1>Journal d'audit</h1><p>${total} entrée${total > 1 ? 's' : ''} — toutes les actions sensibles du site.</p></div>
-    <a class="btn btn--fantome" href="${withQuery('/admin/journal', { action, acteur, depuis, jusqua, q, export: 'csv' })}">⬇ Exporter en CSV</a>
+    <a class="btn btn--fantome" href="${withQuery('/admin/journal', { action, acteur, depuis, jusqua, q, export: 'csv' })}">${icone('telecharger', { taille: 17 })}Exporter en CSV</a>
   </div>
 
   <form method="get" action="/admin/journal" class="filtres">
@@ -633,12 +634,12 @@ export async function journalAudit(env, url, user) {
   ${lignes ? `<div class="tableau-enveloppe"><table>
       <thead><tr><th>Date</th><th>Action</th><th>Auteur</th><th>IP</th></tr></thead>
       <tbody>${lignes}</tbody></table></div>`
-    : '<div class="vide"><span class="vide__icone">📋</span><h3>Aucune entrée</h3><p>Aucune action ne correspond à ces filtres.</p></div>'}
+    : `<div class="vide">${icone('journal', { taille: 34, classe: 'vide__icone' })}<h3>Aucune entrée</h3><p>Aucune action ne correspond à ces filtres.</p></div>`}
 
   ${pages > 1 ? `<nav class="pagination" aria-label="Pagination">
-    <a class="${pageCourante <= 1 ? 'inactif' : ''}" href="${lienPage(pageCourante - 1)}">‹ Précédent</a>
+    <a class="${pageCourante <= 1 ? 'inactif' : ''}" href="${lienPage(pageCourante - 1)}">${icone('fleche_gauche', { taille: 16 })}Précédent</a>
     <span class="actuel">${pageCourante} / ${pages}</span>
-    <a class="${pageCourante >= pages ? 'inactif' : ''}" href="${lienPage(pageCourante + 1)}">Suivant ›</a>
+    <a class="${pageCourante >= pages ? 'inactif' : ''}" href="${lienPage(pageCourante + 1)}">Suivant${icone('fleche_droite', { taille: 16 })}</a>
   </nav>` : ''}
 </div></section>`;
 
@@ -699,7 +700,7 @@ export async function listeMessages(env, url, user, session) {
     <div><h1>Messages</h1><p>Reçus via le formulaire de contact du site.</p></div>
   </div>
   ${cartes ? `<div class="pile">${cartes}</div>`
-    : '<div class="vide"><span class="vide__icone">✉️</span><h3>Aucun message</h3><p>Les messages envoyés depuis la page Contact arriveront ici.</p></div>'}
+    : `<div class="vide">${icone('enveloppe', { taille: 34, classe: 'vide__icone' })}<h3>Aucun message</h3><p>Les messages envoyés depuis la page Contact arriveront ici.</p></div>`}
 </div></section>`;
 
   return html(page({ titre: 'Messages', contenu, user, chemin: '/admin/messages', env, variante: 'espace' }));

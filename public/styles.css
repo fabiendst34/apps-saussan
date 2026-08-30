@@ -97,7 +97,7 @@ hr { border: 0; border-top: 1px solid var(--bord); margin: 2rem 0; }
 /* --- Mise en page ------------------------------------------------- */
 
 .conteneur { width: 100%; max-width: var(--contenu); margin: 0 auto; padding: 0 1.25rem; }
-.conteneur--etroit { max-width: 780px; }
+.conteneur--etroit { max-width: 680px; }
 .conteneur--forme { max-width: 470px; }
 .conteneur--large { max-width: 1320px; }
 
@@ -209,7 +209,6 @@ hr { border: 0; border-top: 1px solid var(--bord); margin: 2rem 0; }
 a.carte { display: block; text-decoration: none; color: inherit; transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
 a.carte:hover { transform: translateY(-3px); box-shadow: var(--ombre-md); border-color: var(--bord-fort); }
 
-.carte-icone { font-size: 2rem; line-height: 1; margin-bottom: .6rem; display: block; }
 
 /* --- Etiquettes --------------------------------------------------- */
 
@@ -246,7 +245,7 @@ a.carte:hover { transform: translateY(-3px); box-shadow: var(--ombre-md); border
 .message--erreur { background: var(--rouge-pale); border-color: #F0C8C4; color: #96271F; }
 .message--info   { background: var(--bleu-pale);  border-color: #C3DDEC; color: #22587C; }
 .message--alerte { background: var(--jaune-pale); border-color: #F2D9A4; color: #8A6A1F; }
-.message__icone { font-size: 1.05rem; line-height: 1.5; flex-shrink: 0; }
+.message__icone { margin-top: .15rem; flex-shrink: 0; }
 
 /* --- Formulaires -------------------------------------------------- */
 
@@ -307,7 +306,6 @@ td.serre, th.serre { white-space: nowrap; width: 1%; }
   text-align: center; padding: 3rem 1.5rem; color: var(--gris);
   background: var(--blanc); border: 1px dashed var(--bord-fort); border-radius: var(--r-lg);
 }
-.vide__icone { font-size: 2.4rem; display: block; margin-bottom: .6rem; opacity: .75; }
 .vide h3 { color: var(--encre); margin-bottom: .25rem; }
 
 /* --- Pied de page ------------------------------------------------- */
@@ -327,3 +325,43 @@ td.serre, th.serre { white-space: nowrap; width: 1%; }
 
 .page { display: flex; flex-direction: column; min-height: 100vh; }
 .page > main { flex: 1; }
+
+/* --- Surfaces peintes par le navigateur --------------------------- */
+/* Selection, caret et ascenseurs viennent sinon d'aucune charte.     */
+
+::selection { background: var(--jaune-pale); color: var(--noir); }
+
+input, textarea, select { caret-color: var(--jaune-fonce); }
+
+* { scrollbar-width: thin; scrollbar-color: var(--bord-fort) transparent; }
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--bord-fort); border-radius: var(--r-pill);
+  border: 3px solid var(--creme); background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--gris-clair); background-clip: padding-box; }
+
+/* Chiffres a chasse fixe partout ou des nombres s'alignent en colonne. */
+table, .tuile__valeur, .cal-numero, .pastille-date, .pagination { font-variant-numeric: tabular-nums; }
+
+/* --- Icones -------------------------------------------------------- */
+
+.ico { flex-shrink: 0; vertical-align: -.15em; }
+.btn .ico, .etiquette .ico { margin-right: -.1rem; }
+.ligne-ico, .evenement__meta span, .legende-cal, .detail-quand, .detail-ou {
+  display: inline-flex; align-items: center; gap: .38rem;
+}
+.legende-cal { display: flex; align-items: flex-start; gap: .5rem; color: var(--gris); font-size: .88rem; margin-top: 1rem; }
+.ico-vedette { color: var(--jaune); display: block; margin: 0 auto 1rem; }
+
+.lien-fleche {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-weight: 800; font-size: .93rem; color: var(--noir);
+  text-decoration: none; white-space: nowrap;
+}
+.lien-fleche .ico { transition: transform var(--transition); }
+.lien-fleche:hover { color: var(--jaune-fonce); }
+.lien-fleche:hover .ico { transform: translateX(3px); }
+
+.lien-retour { display: inline-flex; align-items: center; gap: .3rem; }

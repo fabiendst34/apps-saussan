@@ -1,5 +1,6 @@
 // Gabarits HTML : squelette de page, en-tetes de navigation, pied de page.
 import { esc, fullName, initials } from './util.js';
+import { icone } from './icones.js';
 
 /** Icone inline du logo (evite une requete reseau supplementaire). */
 export const LOGO_SVG = `<svg class="marque__logo" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
@@ -54,7 +55,7 @@ function entetePublique(chemin, user) {
       <span><span class="marque__nom">APPS</span>
       <span class="marque__sous">Parents des Pitchouns Saussannais</span></span>
     </a>
-    <button class="nav-bascule" type="button" aria-expanded="false" aria-controls="nav-principale" aria-label="Ouvrir le menu">☰</button>
+    <button class="nav-bascule" type="button" aria-expanded="false" aria-controls="nav-principale" aria-label="Ouvrir le menu">${icone('menu', { taille: 22 })}</button>
     <nav class="nav" id="nav-principale" aria-label="Navigation principale">
       ${navLinks(NAV_PUBLIQUE, chemin)}${lienEspace}
     </nav>
@@ -64,11 +65,11 @@ function entetePublique(chemin, user) {
 /** Barre sombre de l'espace membres, sous l'en-tete publique. */
 function barreEspace(chemin, user) {
   const admin = user.role === 'admin'
-    ? `<a href="/admin"${chemin.startsWith('/admin') ? ' aria-current="page"' : ''}>⚙️ Administration</a>`
+    ? `<a class="barre-espace__admin" href="/admin"${chemin.startsWith('/admin') ? ' aria-current="page"' : ''}>${icone('reglages', { taille: 16 })} Administration</a>`
     : '';
   const items = chemin.startsWith('/admin') ? NAV_ADMIN : NAV_ESPACE;
   const retour = chemin.startsWith('/admin')
-    ? `<a href="/espace">← Espace membres</a>`
+    ? `<a class="barre-espace__retour" href="/espace">${icone('fleche_gauche', { taille: 16 })} Espace membres</a>`
     : '';
   return `<div class="barre-espace"><div class="conteneur barre-espace__inner">
     ${retour}${navLinks(items, chemin)}${chemin.startsWith('/admin') ? '' : admin}
@@ -76,7 +77,9 @@ function barreEspace(chemin, user) {
       <span class="jeton" aria-hidden="true">${esc(initials(user))}</span>
       <span>${esc(fullName(user))}</span>
       <form method="post" action="/espace/deconnexion" class="forme-inline">
-        <button class="btn btn--petit btn--fantome" style="border-color:#4A443D;color:#CFC8BC" type="submit">Se déconnecter</button>
+        <button class="btn btn--petit barre-espace__sortie" type="submit">
+          ${icone('deconnexion', { taille: 16 })}<span>Se déconnecter</span>
+        </button>
       </form>
     </div>
   </div></div>`;
@@ -183,15 +186,21 @@ ${SCRIPT_MENU}
 /** Bandeau de notification issu des parametres ?ok= / ?err= / ?info=. */
 export function messagesFlash(url) {
   const out = [];
-  const bloc = (type, icone, texte) =>
-    `<div class="message message--${type}"><span class="message__icone">${icone}</span><span>${esc(texte)}</span></div>`;
   const ok = url.searchParams.get('ok');
   const err = url.searchParams.get('err');
   const info = url.searchParams.get('info');
-  if (ok) out.push(bloc('succes', '✅', FLASH[ok] || ok));
-  if (err) out.push(bloc('erreur', '⚠️', FLASH[err] || err));
-  if (info) out.push(bloc('info', 'ℹ️', FLASH[info] || info));
+  if (ok) out.push(bandeau('succes', FLASH[ok] || ok));
+  if (err) out.push(bandeau('erreur', FLASH[err] || err));
+  if (info) out.push(bandeau('info', FLASH[info] || info));
   return out.join('');
+}
+
+/** Bandeau de notification. Le type choisit l'icone et le ton. */
+export function bandeau(type, texte) {
+  const icones = { succes: 'coche', erreur: 'alerte', info: 'info', alerte: 'alerte' };
+  return `<div class="message message--${type}" role="${type === 'erreur' ? 'alert' : 'status'}">`
+    + `${icone(icones[type] || 'info', { taille: 20, classe: 'message__icone' })}`
+    + `<span>${esc(texte)}</span></div>`;
 }
 
 /** Messages courts referances par cle, pour ne pas les passer en clair dans l'URL. */

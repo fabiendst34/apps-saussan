@@ -176,7 +176,6 @@ export default {
       console.error('Erreur non interceptée', chemin, erreur);
       const contenu = `
 <section class="section"><div class="conteneur conteneur--etroit centre" style="padding:3rem 0">
-  <div style="font-size:4rem">🛠️</div>
   <h1>Une erreur est survenue</h1>
   <p class="muet">Le site a rencontré un problème inattendu. L'incident a été enregistré&nbsp;; merci de réessayer dans un instant.</p>
   <div class="rang" style="justify-content:center;margin-top:1.5rem">

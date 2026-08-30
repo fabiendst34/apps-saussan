@@ -4,7 +4,8 @@ import {
   parseDate, toDateKey, todayKey, formatDateLong, formatDateShort, formatDateTime,
   formatRange, fullName, MOIS_NOMS, JOURS_COURTS,
 } from '../lib/util.js';
-import { page, messagesFlash } from '../lib/layout.js';
+import { page, messagesFlash, bandeau } from '../lib/layout.js';
+import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
 import { logAudit, diff, ACTION_LABELS, actionTone, FIELD_LABELS } from '../lib/audit.js';
 import { hashPassword, verifyPassword, passwordProblem, destroyUserSessions, checkCsrf } from '../lib/auth.js';
 import { CATEGORIES, categorieLabel, carteEvenement } from './public.js';
@@ -76,8 +77,9 @@ export async function calendrier(env, url, user, session) {
 
   const puce = (ev) => {
     const heure = ev.all_day ? '' : `${esc(String(ev.start_time || '').slice(0, 5))} `;
+    const verrou = ev.is_public ? '' : icone('cadenas', { taille: 11 });
     return `<a class="cal-puce cat-${esc(ev.category)}${ev.is_public ? '' : ' cal-puce--prive'}"
-      href="/espace/evenements/${esc(ev.id)}" title="${esc(ev.title)}">${heure}${esc(ev.title)}</a>`;
+      href="/espace/evenements/${esc(ev.id)}" title="${esc(ev.title)}">${verrou}<span>${heure}${esc(ev.title)}</span></a>`;
   };
 
   const grille = `<div class="cal-grille">
@@ -104,7 +106,7 @@ export async function calendrier(env, url, user, session) {
   const listeMobile = `<div class="cal-liste-mobile">${
     duMois.length
       ? `<div class="pile">${duMois.map((e) => carteEvenement(e, `/espace/evenements/${e.id}`)).join('')}</div>`
-      : `<div class="vide"><span class="vide__icone">🗓️</span><h3>Aucun événement ce mois-ci</h3></div>`
+      : `<div class="vide">${icone('calendrier', { taille: 34, classe: 'vide__icone' })}<h3>Aucun événement ce mois-ci</h3></div>`
   }</div>`;
 
   const contenu = `
@@ -112,13 +114,13 @@ export async function calendrier(env, url, user, session) {
   ${messagesFlash(url)}
   <div class="titre-page">
     <div><h1>Calendrier de l'association</h1><p>Toutes les dates de l'année, publiques et internes.</p></div>
-    <a class="btn btn--principal" href="/espace/evenements/nouveau">＋ Nouvel événement</a>
+    <a class="btn btn--principal" href="/espace/evenements/nouveau">${icone('plus', { taille: 18 })}Nouvel événement</a>
   </div>
 
   <div class="cal-entete">
     <div class="cal-nav">
-      <a href="${lienMois(precedent)}" aria-label="Mois précédent">‹</a>
-      <a href="${lienMois(suivant)}" aria-label="Mois suivant">›</a>
+      <a href="${lienMois(precedent)}" aria-label="Mois précédent">${icone('fleche_gauche', { taille: 20 })}</a>
+      <a href="${lienMois(suivant)}" aria-label="Mois suivant">${icone('fleche_droite', { taille: 20 })}</a>
     </div>
     <span class="cal-mois">${MOIS_NOMS[mois]} ${annee}</span>
     <a class="btn btn--fantome btn--petit" href="/espace">Aujourd'hui</a>
@@ -131,7 +133,7 @@ export async function calendrier(env, url, user, session) {
   ${grille}
   ${listeMobile}
 
-  <p class="petit muet" style="margin-top:1rem">🔒 Les événements marqués d'un cadenas sont visibles uniquement dans cet espace. Les autres apparaissent sur le site public.</p>
+  <p class="legende-cal">${icone('cadenas', { taille: 15 })}<span>Les événements marqués d'un cadenas ne sont visibles que dans cet espace. Les autres apparaissent aussi sur le site public.</span></p>
 </div></section>`;
 
   return html(page({ titre: 'Calendrier', contenu, user, chemin: '/espace', env, variante: 'espace' }));
@@ -166,7 +168,7 @@ export async function listeEvenements(env, url, user) {
       <td>
         <a href="/espace/evenements/${esc(e.id)}" style="font-weight:800;color:var(--noir);text-decoration:none">${esc(e.title)}</a>
         ${e.deleted_at ? '<span class="etiquette etiquette--rouge" style="margin-left:.4rem">Supprimé</span>' : ''}
-        ${e.location ? `<div class="petit muet">📍 ${esc(e.location)}</div>` : ''}
+        ${e.location ? `<div class="petit muet ligne-ico">${icone('lieu', { taille: 14 })}${esc(e.location)}</div>` : ''}
       </td>
       <td class="serre">${esc(formatDateShort(e.start_date))}${e.all_day ? '' : `<div class="petit muet">${esc(String(e.start_time || '').slice(0, 5))}</div>`}</td>
       <td class="serre"><span class="etiquette etiquette-cat cat-${esc(e.category)}">${esc(categorieLabel(e.category))}</span></td>
@@ -187,7 +189,7 @@ export async function listeEvenements(env, url, user) {
   ${messagesFlash(url)}
   <div class="titre-page">
     <div><h1>Événements</h1><p>${(results || []).length} événement${(results || []).length > 1 ? 's' : ''} affiché${(results || []).length > 1 ? 's' : ''}.</p></div>
-    <a class="btn btn--principal" href="/espace/evenements/nouveau">＋ Nouvel événement</a>
+    <a class="btn btn--principal" href="/espace/evenements/nouveau">${icone('plus', { taille: 18 })}Nouvel événement</a>
   </div>
   <div class="rang" style="margin-bottom:1.25rem">
     ${onglet('avenir', 'À venir')}${onglet('passes', 'Passés')}${onglet('supprimes', 'Corbeille')}
@@ -195,7 +197,7 @@ export async function listeEvenements(env, url, user) {
   ${lignes ? `<div class="tableau-enveloppe"><table>
       <thead><tr><th>Événement</th><th>Date</th><th>Catégorie</th><th>Visibilité</th><th>Créé par</th><th></th></tr></thead>
       <tbody>${lignes}</tbody></table></div>`
-    : `<div class="vide"><span class="vide__icone">🗓️</span><h3>Aucun événement</h3>
+    : `<div class="vide">${icone('calendrier', { taille: 34, classe: 'vide__icone' })}<h3>Aucun événement</h3>
        <p>${filtre === 'supprimes' ? 'La corbeille est vide.' : 'Commencez par en créer un.'}</p></div>`}
 </div></section>`;
 
@@ -230,14 +232,13 @@ export async function detailEvenement(env, url, user, session, id) {
   ${messagesFlash(url)}
   <p class="fil"><a href="/espace">Calendrier</a> › <a href="/espace/evenements">Événements</a> › ${esc(ev.title)}</p>
 
-  ${ev.deleted_at ? `<div class="message message--erreur"><span class="message__icone">🗑️</span>
-    <span>Cet événement a été supprimé le ${esc(formatDateTime(ev.deleted_at))}. Il n'apparaît plus dans le calendrier.</span></div>` : ''}
+  ${ev.deleted_at ? bandeau('erreur', `Cet événement a été supprimé le ${formatDateTime(ev.deleted_at)}. Il n'apparaît plus dans le calendrier.`) : ''}
 
   <div class="detail-bandeau cat-${esc(ev.category)}">
     <span class="etiquette etiquette-cat">${esc(categorieLabel(ev.category))}</span>
     <h1 style="margin:.5rem 0 .35rem">${esc(ev.title)}</h1>
-    <p style="font-weight:700;margin:0">🕒 ${esc(formatRange(ev))}</p>
-    ${ev.location ? `<p style="margin:.25rem 0 0">📍 ${esc(ev.location)}</p>` : ''}
+    <p class="detail-quand">${icone('horloge', { taille: 18 })}${esc(formatRange(ev))}</p>
+    ${ev.location ? `<p class="detail-ou">${icone('lieu', { taille: 18 })}${esc(ev.location)}</p>` : ''}
   </div>
 
   <div class="rang" style="margin-bottom:1.5rem">
@@ -253,7 +254,7 @@ export async function detailEvenement(env, url, user, session, id) {
         ${csrfInput(session)}
         <button class="btn btn--danger" type="submit">Supprimer</button>
       </form>`}
-    <a class="btn btn--fantome pousse" href="/espace">← Retour au calendrier</a>
+    <a class="btn btn--fantome pousse" href="/espace">${icone('fleche_gauche', { taille: 16 })}Retour au calendrier</a>
   </div>
 
   ${ev.description ? `<div class="carte" style="margin-bottom:1.5rem"><h2 style="font-size:1.15rem">Description</h2>${richText(ev.description)}</div>` : ''}
@@ -328,7 +329,7 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
     : 'Il apparaîtra immédiatement dans le calendrier de l’espace membres.'}</p>
 
   <div class="carte" style="margin-top:1.5rem">
-    ${erreur ? `<div class="message message--erreur"><span class="message__icone">⚠️</span><span>${esc(erreur)}</span></div>` : ''}
+    ${erreur ? bandeau('erreur', erreur) : ''}
     <form method="post" action="${action}">
       ${csrfInput(session)}
       <div class="champ">
@@ -550,7 +551,7 @@ export function monCompte(env, url, user, session, erreur = null) {
     </div>
   </div>
 
-  ${erreur ? `<div class="message message--erreur"><span class="message__icone">⚠️</span><span>${esc(erreur)}</span></div>` : ''}
+  ${erreur ? bandeau('erreur', erreur) : ''}
 
   <div class="carte" style="margin-bottom:1.5rem">
     <h2 style="font-size:1.2rem">Mes informations</h2>
@@ -669,7 +670,7 @@ export async function monJournal(env, url, user) {
   </div>
   <div class="carte">
     ${results && results.length ? results.map(ligneAudit).join('')
-      : '<div class="vide"><span class="vide__icone">📋</span><h3>Aucune activité</h3><p>Vos actions apparaîtront ici.</p></div>'}
+      : `<div class="vide">${icone('journal', { taille: 34, classe: 'vide__icone' })}<h3>Aucune activité</h3><p>Vos actions apparaîtront ici.</p></div>`}
   </div>
   <p class="petit muet" style="margin-top:1rem">Ces informations sont conservées 24 mois à des fins de traçabilité. Voir la <a href="/confidentialite">politique de confidentialité</a>.</p>
 </div></section>`;

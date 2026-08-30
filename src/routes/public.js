@@ -1,7 +1,8 @@
 // Pages accessibles a tous : accueil, association, evenements, adhesion, contact, mentions.
 import { esc, richText, html, redirect, uuid, nowIso, field, isEmail, clientIp,
          formatDateLong, formatRange, parseDate, todayKey, MOIS_COURTS } from '../lib/util.js';
-import { page, messagesFlash, LOGO_SVG } from '../lib/layout.js';
+import { page, messagesFlash, bandeau, LOGO_SVG } from '../lib/layout.js';
+import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
 import { logAudit } from '../lib/audit.js';
 import { sendEmail, contactNotificationEmail } from '../lib/email.js';
 
@@ -32,10 +33,10 @@ export function carteEvenement(ev, href, passe = false) {
     <div>
       <h3 class="evenement__titre">${esc(ev.title)}</h3>
       <div class="evenement__meta">
-        <span>🕒 ${esc(formatRange(ev))}</span>
-        ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
-        <span class="etiquette etiquette-cat">${esc(categorieLabel(ev.category))}</span>
-        ${ev.is_public ? '' : '<span class="etiquette etiquette--gris">🔒 Interne</span>'}
+        <span>${icone('horloge', { taille: 16 })}${esc(formatRange(ev))}</span>
+        ${ev.location ? `<span>${icone('lieu', { taille: 16 })}${esc(ev.location)}</span>` : ''}
+        <span class="etiquette etiquette-cat">${icone(ICONE_CATEGORIE[ev.category] || 'calendrier', { taille: 14 })}${esc(categorieLabel(ev.category))}</span>
+        ${ev.is_public ? '' : `<span class="etiquette etiquette--gris">${icone('cadenas', { taille: 14 })}Interne</span>`}
       </div>
       ${ev.description ? `<p class="evenement__desc">${esc(String(ev.description).slice(0, 190))}${String(ev.description).length > 190 ? '…' : ''}</p>` : ''}
     </div>
@@ -60,47 +61,40 @@ export async function accueil(env, url, user) {
 
   const listeEvenements = prochains.length
     ? `<div class="pile">${prochains.map((e) => carteEvenement(e, `/evenements#ev-${e.id}`)).join('')}</div>`
-    : `<div class="vide"><span class="vide__icone">🗓️</span>
+    : `<div class="vide">${icone('calendrier', { taille: 34, classe: 'vide__icone' })}
         <h3>Rien de prévu pour le moment</h3>
         <p>Le calendrier de l'année se remplit peu à peu. Revenez bientôt&nbsp;!</p></div>`;
 
   const contenu = `
 <section class="hero"><div class="conteneur hero__inner">
-  <div>
-    <span class="hero__accroche">🎒 Écoles de Saussan · Association loi 1901</span>
+  <div class="hero__texte-bloc">
     <h1>Des parents qui donnent du temps, des enfants qui <em>en profitent</em>.</h1>
-    <p class="hero__texte">L'APPS réunit les parents d'élèves des écoles maternelle et élémentaire de Saussan pour organiser des moments de fête, financer les projets pédagogiques et faire entendre la voix des familles.</p>
+    <p class="hero__chapo">L'APPS réunit les parents d'élèves des écoles maternelle et élémentaire de Saussan pour organiser des moments de fête, financer les projets pédagogiques et faire entendre la voix des familles.</p>
     <div class="rang">
       <a class="btn btn--principal" href="/adherer">Rejoindre l'association</a>
       <a class="btn btn--fantome" href="/evenements">Voir les événements</a>
     </div>
   </div>
-  <div class="hero__visuel">${LOGO_SVG.replace('class="marque__logo"', '')}</div>
+  <div class="hero__visuel">${LOGO_SVG.replace('class="marque__logo"', 'class="mascotte"')}</div>
 </div></section>
 
 <section class="section section--blanc">
   <div class="conteneur">
-    <div class="centre" style="max-width:62ch;margin:0 auto 2.5rem">
-      <h2>Ce que nous faisons</h2>
-      <p class="muet">Tout ce que l'association organise sert un seul objectif&nbsp;: améliorer le quotidien scolaire des enfants de Saussan.</p>
-    </div>
-    <div class="grille grille--3">
-      <div class="carte">
-        <span class="carte-icone">🎉</span>
-        <h3 class="carte__titre">Animer la vie de l'école</h3>
-        <p class="carte__meta">Kermesse, carnaval, fête de fin d'année, marché de Noël&nbsp;: des rendez-vous qui rassemblent les familles du village.</p>
+    <h2 class="missions__titre">Une association, trois raisons d'être</h2>
+    <dl class="missions">
+      <div class="mission">
+        <dt>${icone('guirlande', { taille: 22 })}<span>Animer la vie de l'école</span></dt>
+        <dd>Kermesse, carnaval, marché de Noël, fête de fin d'année. Des rendez-vous qui font se rencontrer les familles du village, bien au-delà du portail de l'école.</dd>
       </div>
-      <div class="carte">
-        <span class="carte-icone">💶</span>
-        <h3 class="carte__titre">Financer les projets</h3>
-        <p class="carte__meta">Les bénéfices de nos actions financent sorties scolaires, spectacles, matériel et classes découvertes.</p>
+      <div class="mission">
+        <dt>${icone('tirelire', { taille: 22 })}<span>Financer les projets</span></dt>
+        <dd>Chaque euro récolté lors de nos actions repart vers les classes&nbsp;: sorties, spectacles, matériel pédagogique, classes découvertes.</dd>
       </div>
-      <div class="carte">
-        <span class="carte-icone">🗣️</span>
-        <h3 class="carte__titre">Représenter les parents</h3>
-        <p class="carte__meta">Nos élus siègent au conseil d'école et portent les questions des familles auprès de l'équipe enseignante et de la mairie.</p>
+      <div class="mission">
+        <dt>${icone('megaphone', { taille: 22 })}<span>Porter la voix des parents</span></dt>
+        <dd>Nos élus siègent au conseil d'école et relaient auprès de l'équipe enseignante et de la mairie les questions que se posent les familles.</dd>
       </div>
-    </div>
+    </dl>
   </div>
 </section>
 
@@ -108,7 +102,7 @@ export async function accueil(env, url, user) {
   <div class="conteneur">
     <div class="titre-page">
       <div><h2>Prochains rendez-vous</h2><p>Les dates ouvertes à toutes les familles.</p></div>
-      <a class="btn btn--fantome btn--petit" href="/evenements">Tout l'agenda →</a>
+      <a class="lien-fleche" href="/evenements">Tout l'agenda ${icone('fleche_longue', { taille: 18 })}</a>
     </div>
     ${listeEvenements}
   </div>
@@ -116,20 +110,23 @@ export async function accueil(env, url, user) {
 
 <section class="section section--jaune">
   <div class="conteneur">
-    <div class="grille grille--2" style="align-items:center;gap:2.5rem">
+    <div class="coup-de-main">
       <div>
         <h2>Donner un coup de main, même une heure</h2>
-        <p>Pas besoin d'être disponible toute l'année. Tenir un stand une matinée, préparer des gâteaux, prêter une table&nbsp;: chaque contribution compte, et c'est aussi une bonne façon de rencontrer les autres parents.</p>
-        <div class="rang" style="margin-top:1.25rem">
+        <p>Pas besoin d'être disponible toute l'année. Chaque contribution compte, et c'est la façon la plus simple de rencontrer les autres parents.</p>
+        <div class="rang" style="margin-top:1.5rem">
           <a class="btn btn--principal" href="/adherer#adhesion">Adhérer en ligne</a>
           <a class="btn btn--fantome" href="/contact">Poser une question</a>
         </div>
       </div>
-      <div class="chiffres">
-        <div class="chiffre"><div class="chiffre__valeur">2</div><div class="chiffre__label">écoles soutenues</div></div>
-        <div class="chiffre"><div class="chiffre__valeur">1901</div><div class="chiffre__label">association loi 1901</div></div>
-        <div class="chiffre"><div class="chiffre__valeur">100%</div><div class="chiffre__label">bénévole</div></div>
-      </div>
+      <ul class="coups-de-pouce">
+        ${[
+          'Tenir un stand une matinée de kermesse',
+          'Préparer un gâteau pour une vente',
+          'Prêter une table, une tente, une sono',
+          'Venir démonter à la fin de la fête',
+        ].map((c) => `<li>${icone('coche_simple', { taille: 17 })}${esc(c)}</li>`).join('')}
+      </ul>
     </div>
   </div>
 </section>`;
@@ -148,7 +145,7 @@ export async function association(env, url, user) {
 <section class="section"><div class="conteneur conteneur--etroit">
   <p class="fil"><a href="/">Accueil</a> › L'association</p>
   <h1>L'association</h1>
-  <p class="hero__texte" style="max-width:none">L'APPS — Association des Parents des Pitchouns Saussannais — regroupe les parents d'élèves bénévoles des écoles maternelle et élémentaire de Saussan.</p>
+  <p class="chapo">L'APPS — Association des Parents des Pitchouns Saussannais — regroupe les parents d'élèves bénévoles des écoles maternelle et élémentaire de Saussan.</p>
 
   <div class="carte" style="margin:2rem 0">
     <h2 style="font-size:1.35rem">Notre rôle</h2>
@@ -197,7 +194,7 @@ export async function evenements(env, url, user) {
 
   const bloc = (liste, passe) => liste.length
     ? `<div class="pile">${liste.map((e) => `<div id="ev-${esc(e.id)}">${carteEvenement(e, null, passe)}</div>`).join('')}</div>`
-    : `<div class="vide"><span class="vide__icone">🗓️</span><h3>Aucun événement</h3>
+    : `<div class="vide">${icone('calendrier', { taille: 34, classe: 'vide__icone' })}<h3>Aucun événement</h3>
        <p>${passe ? "L'historique se remplira au fil de l'année." : 'Le programme sera publié prochainement.'}</p></div>`;
 
   const contenu = `
@@ -229,13 +226,13 @@ export async function adherer(env, url, user) {
 <section class="section"><div class="conteneur conteneur--etroit">
   <p class="fil"><a href="/">Accueil</a> › Nous rejoindre</p>
   <h1>Nous rejoindre</h1>
-  <p class="hero__texte" style="max-width:none">Tous les parents d'élèves des écoles de Saussan peuvent adhérer à l'APPS. Aucune compétence particulière n'est requise&nbsp;: seulement l'envie de participer.</p>
+  <p class="chapo">Tous les parents d'élèves des écoles de Saussan peuvent adhérer à l'APPS. Aucune compétence particulière n'est requise&nbsp;: seulement l'envie de participer.</p>
 
-  <div class="grille grille--3" style="margin:2rem 0">
-    <div class="carte"><span class="carte-icone">1️⃣</span><h3 class="carte__titre">Adhérez en ligne</h3><p class="carte__meta">Quelques minutes suffisent, directement sur cette page via HelloAsso.</p></div>
-    <div class="carte"><span class="carte-icone">2️⃣</span><h3 class="carte__titre">Recevez votre reçu</h3><p class="carte__meta">HelloAsso vous envoie automatiquement une confirmation par e-mail.</p></div>
-    <div class="carte"><span class="carte-icone">3️⃣</span><h3 class="carte__titre">Participez</h3><p class="carte__meta">Selon vos disponibilités&nbsp;: une réunion, un stand, un coup de main ponctuel.</p></div>
-  </div>
+  <ol class="etapes">
+    <li><div><h3>Adhérez en ligne</h3><p>Quelques minutes suffisent, sur cette page, via HelloAsso.</p></div></li>
+    <li><div><h3>Recevez votre reçu</h3><p>HelloAsso vous envoie une confirmation par e-mail dans la foulée.</p></div></li>
+    <li><div><h3>Participez</h3><p>Selon vos disponibilités&nbsp;: une réunion, un stand, un coup de main ponctuel.</p></div></li>
+  </ol>
 
   <h2 id="adhesion">Adhérer en ligne</h2>
   <p class="muet">L'adhésion pour l'année scolaire 2026-2027 se fait via HelloAsso, notre plateforme de paiement sécurisée. Le formulaire ci-dessous est hébergé par HelloAsso&nbsp;: aucune coordonnée bancaire ne transite par ce site.</p>
@@ -273,9 +270,7 @@ export async function adherer(env, url, user) {
     // On n'accepte la consigne de redimensionnement que si elle vient bien de HelloAsso.
     if (e.origin !== 'https://www.helloasso.com' && !/\\.helloasso\\.com$/.test(e.origin)) return;
     var hauteur = parseFloat(e.data && e.data.height);
-    if (hauteur && hauteur > parseFloat(cadre.style.height || 0)) {
-      cadre.style.height = hauteur + 'px';
-    }
+    if (hauteur > 200) cadre.style.height = Math.ceil(hauteur) + 'px';
   });
 })();
 </script>`;
@@ -291,9 +286,7 @@ export async function adherer(env, url, user) {
 
 export function contact(env, url, user, erreurs = null, valeurs = {}) {
   const v = (k) => esc(valeurs[k] || '');
-  const err = erreurs
-    ? `<div class="message message--erreur"><span class="message__icone">⚠️</span><span>${esc(erreurs)}</span></div>`
-    : '';
+  const err = erreurs ? bandeau('erreur', erreurs) : '';
 
   const contenu = `
 <section class="section"><div class="conteneur conteneur--etroit">
@@ -445,7 +438,7 @@ export function confidentialite(env, url, user) {
 export function page404(env, url, user) {
   const contenu = `
 <section class="section"><div class="conteneur conteneur--etroit centre" style="padding:3rem 0">
-  <div style="font-size:4rem">🎒</div>
+  ${icone('cartable', { taille: 56, classe: 'ico-vedette' })}
   <h1>Page introuvable</h1>
   <p class="muet">Cette page n'existe pas ou plus. Elle a peut-être été rangée dans le mauvais cartable.</p>
   <div class="rang" style="justify-content:center;margin-top:1.5rem">

@@ -21,30 +21,15 @@
   .hero__inner { grid-template-columns: 1fr; gap: 2.25rem; }
   .hero__visuel { order: -1; max-width: 240px; margin: 0 auto; }
 }
-.hero__accroche {
-  display: inline-flex; align-items: center; gap: .5rem;
-  background: var(--blanc); border: 1px solid var(--bord-fort);
-  padding: .35rem .9rem; border-radius: var(--r-pill);
-  font-size: .85rem; font-weight: 800; color: var(--gris); margin-bottom: 1.25rem;
-}
 .hero h1 { margin-bottom: 1rem; }
 .hero h1 em { font-style: normal; color: var(--jaune-fonce); }
-.hero__texte { font-size: 1.12rem; color: var(--gris); max-width: 46ch; margin-bottom: 1.75rem; }
 .hero__visuel { display: flex; justify-content: center; }
-.hero__visuel svg { width: 100%; max-width: 320px; filter: drop-shadow(0 18px 34px rgba(29,27,25,.16)); }
-
-/* --- Chiffres cles ------------------------------------------------ */
-
-.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
-.chiffre { text-align: center; padding: 1.5rem 1rem; background: var(--blanc); border: 1px solid var(--bord); border-radius: var(--r-lg); }
-.chiffre__valeur { font-family: 'Baloo 2', sans-serif; font-size: 2.3rem; font-weight: 800; color: var(--jaune-fonce); line-height: 1; }
-.chiffre__label { font-size: .88rem; color: var(--gris); font-weight: 700; margin-top: .3rem; }
 
 /* --- Liste d evenements publics ----------------------------------- */
 
 .evenement {
   display: grid; grid-template-columns: 76px 1fr; gap: 1.25rem; align-items: start;
-  background: var(--blanc); border: 1px solid var(--bord); border-left: 4px solid var(--cat, var(--jaune));
+  background: var(--blanc); border: 1px solid var(--bord);
   border-radius: var(--r-md); padding: 1.15rem 1.35rem;
   text-decoration: none; color: inherit;
   transition: transform var(--transition), box-shadow var(--transition);
@@ -152,15 +137,15 @@ a.evenement:hover { transform: translateX(3px); box-shadow: var(--ombre-md); }
 .cal-case--aujourdhui .cal-numero { background: var(--noir); color: var(--jaune); }
 
 .cal-puce {
-  display: block; font-size: .76rem; font-weight: 700; line-height: 1.3;
+  display: flex; align-items: center; gap: .15rem; font-size: .76rem; font-weight: 700; line-height: 1.3;
   padding: .2rem .4rem; border-radius: var(--r-xs); text-decoration: none;
   background: var(--cat-pale); color: var(--cat);
-  border-left: 3px solid var(--cat);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  white-space: nowrap; overflow: hidden;
   transition: filter var(--transition);
 }
 .cal-puce:hover { filter: brightness(.94); color: var(--cat); }
-.cal-puce--prive::after { content: " 🔒"; }
+.cal-puce > span { overflow: hidden; text-overflow: ellipsis; }
+.cal-puce--prive .ico { opacity: .8; }
 .cal-plus { font-size: .72rem; color: var(--gris); font-weight: 700; padding-left: .4rem; }
 
 /* Sous 760 px la grille sur sept colonnes devient illisible : on lui substitue
@@ -177,7 +162,7 @@ a.evenement:hover { transform: translateX(3px); box-shadow: var(--ombre-md); }
 
 .detail-bandeau {
   background: var(--cat-pale, var(--jaune-pale)); border-radius: var(--r-lg);
-  padding: 1.5rem; border-left: 5px solid var(--cat, var(--jaune)); margin-bottom: 1.5rem;
+  padding: 1.5rem 1.6rem; margin-bottom: 1.5rem;
 }
 .detail-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: .85rem; }
 .detail-liste li { display: grid; grid-template-columns: 130px 1fr; gap: .75rem; align-items: start; font-size: .95rem; }
@@ -242,9 +227,6 @@ a.tuile:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
   border-radius: var(--r-md); padding: 1.1rem 1.25rem; font-size: .95rem;
 }
 
-.compteur-force { height: 5px; border-radius: var(--r-pill); background: var(--bord); overflow: hidden; margin-top: .5rem; }
-.compteur-force > i { display: block; height: 100%; width: 0; background: var(--rouge); transition: width var(--transition), background var(--transition); }
-
 @media print {
   .entete, .barre-espace, .pied, .actions-ligne, .cal-nav { display: none !important; }
   body { background: #fff; }
@@ -269,4 +251,136 @@ a.tuile:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
   width: 100%;
   height: 750px;      /* hauteur de repli, ajustee ensuite par HelloAsso */
   border: 0;
+}
+
+/* =====================================================================
+   Composants issus de la passe de design
+   ===================================================================== */
+
+/* --- Banniere : la mascotte s'installe une fois, a l'arrivee ------- */
+
+.hero__chapo {
+  font-size: 1.15rem; color: var(--gris);
+  max-width: 46ch; margin: 0 0 1.75rem;
+}
+
+.mascotte {
+  width: 100%; max-width: 300px;
+  filter: drop-shadow(0 18px 34px rgba(29,27,25,.16));
+  transform-origin: 50% 88%;
+  animation: mascotte-arrivee 900ms cubic-bezier(.16, 1, .3, 1) both;
+}
+/* Le cartable se pose : il descend, s'ecrase legerement, puis se stabilise. */
+@keyframes mascotte-arrivee {
+  0%   { transform: translateY(-14px) scale(.94); opacity: 0; }
+  55%  { transform: translateY(0) scale(1.015); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+/* Les yeux clignent une seule fois, juste apres l'atterrissage. */
+.mascotte g { animation: clin 260ms ease-in-out 1150ms 1 both; transform-origin: 50% 52%; }
+@keyframes clin {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascotte, .mascotte g { animation: none; }
+}
+
+/* --- Les trois raisons d'etre ------------------------------------- */
+/* Une liste editoriale, pas trois cartes interchangeables.           */
+
+.missions__titre { max-width: 20ch; margin-bottom: 2rem; }
+
+.missions { margin: 0; display: grid; gap: 0; }
+.mission {
+  display: grid; grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
+  gap: 1rem 3rem; align-items: start;
+  padding: 1.6rem 0; border-top: 1px solid var(--bord);
+}
+.mission:last-child { border-bottom: 1px solid var(--bord); }
+.mission dt {
+  display: flex; align-items: center; gap: .7rem;
+  font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 1.32rem;
+  color: var(--noir); line-height: 1.2; text-wrap: balance;
+}
+/* L'icone est posee dans une pastille : sans elle, un trait de 24px
+   ne pese rien face a un titre de 1.3rem. */
+.mission dt .ico {
+  color: var(--jaune-fonce); box-sizing: content-box;
+  padding: .5rem; background: var(--jaune-voile); border-radius: 50%;
+}
+.mission dd { margin: 0; color: var(--gris); max-width: 62ch; }
+
+@media (max-width: 720px) {
+  .mission { grid-template-columns: 1fr; gap: .5rem; padding: 1.3rem 0; }
+  .mission dt { font-size: 1.15rem; }
+  .mission dt .ico { padding: .4rem; }
+}
+
+/* --- Coup de main ------------------------------------------------- */
+
+.coup-de-main {
+  display: grid; grid-template-columns: 1.1fr .9fr; gap: 3rem; align-items: center;
+}
+@media (max-width: 820px) { .coup-de-main { grid-template-columns: 1fr; gap: 2rem; } }
+
+.coups-de-pouce { list-style: none; margin: 0; padding: 0; }
+.coups-de-pouce li {
+  padding: .85rem 0 .85rem 2rem; position: relative;
+  border-bottom: 1px solid rgba(29,27,25,.09);
+  font-weight: 600; color: var(--encre);
+}
+.coups-de-pouce li:last-child { border-bottom: 0; }
+
+/* La coche vient du jeu d'icones, comme partout ailleurs dans l'interface. */
+.coups-de-pouce .ico { position: absolute; left: 0; top: .95rem; color: var(--jaune-fonce); }
+
+/* --- Etapes numerotees -------------------------------------------- */
+/* La sequence porte l'information : le rang compte vraiment ici.      */
+
+.etapes { list-style: none; counter-reset: etape; margin: 2rem 0 2.5rem; padding: 0; display: grid; gap: 1.25rem; }
+.etapes li { counter-increment: etape; display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.etapes li::before {
+  content: counter(etape);
+  font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.15rem;
+  width: 2.4rem; height: 2.4rem; border-radius: 50%;
+  background: var(--jaune); color: var(--noir);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.etapes h3 { margin: .25rem 0 .15rem; font-size: 1.15rem; }
+.etapes p { margin: 0; color: var(--gris); }
+
+/* --- Chapeau de page ---------------------------------------------- */
+
+.chapo { font-size: 1.12rem; color: var(--gris); max-width: 58ch; margin-bottom: 1.5rem; }
+
+/* --- Barre membres : icones et bouton de sortie -------------------- */
+
+.barre-espace a, .barre-espace__sortie { display: inline-flex; align-items: center; gap: .4rem; }
+.barre-espace__sortie {
+  background: transparent; color: #CFC8BC; border: 1.5px solid #4A443D;
+  padding: .35rem .8rem;
+}
+.barre-espace__sortie:hover { background: #2F2B27; color: var(--blanc); border-color: #6A6259; }
+
+/* --- Detail d evenement : la categorie colore le bandeau ---------- */
+
+.detail-bandeau { background: var(--cat-pale, var(--jaune-pale)); }
+.detail-quand { font-weight: 700; margin: 0; }
+.detail-ou { margin: .3rem 0 0; }
+.detail-bandeau .ico { color: var(--cat, var(--jaune-fonce)); }
+
+/* --- Puces du calendrier : la couleur vient du fond --------------- */
+
+.cal-puce { padding-left: .45rem; }
+
+/* --- Etats vides --------------------------------------------------- */
+
+.vide__icone { color: var(--gris-clair); display: block; margin: 0 auto .75rem; opacity: 1; }
+
+/* Sur mobile, les deux appels a l'action prennent la meme largeur :
+   sinon ils dessinent un escalier. */
+@media (max-width: 560px) {
+  .hero .rang { flex-direction: column; align-items: stretch; }
+  .hero .rang .btn { width: 100%; }
 }
