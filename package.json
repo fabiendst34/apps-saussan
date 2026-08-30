@@ -1,0 +1,19 @@
+{
+  "name": "apps-saussan",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Site de l'Association des Parents des Pitchouns Saussannais (APPS)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute apps-saussan --local --file=./db/schema.sql",
+    "db:init:remote": "wrangler d1 execute apps-saussan --remote --file=./db/schema.sql",
+    "db:seed": "wrangler d1 execute apps-saussan --local --file=./db/seed.sql",
+    "db:reset": "wrangler d1 execute apps-saussan --local --file=./db/reset.sql",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.127.1"
+  }
+}

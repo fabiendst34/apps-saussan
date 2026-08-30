@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Logo APPS : un cartable souriant">
+  <!-- Attaches superieures -->
+  <rect x="27" y="4"  width="15" height="20" rx="5" fill="#F2A93B"/>
+  <rect x="78" y="4"  width="15" height="20" rx="5" fill="#F2A93B"/>
+  <!-- Corps du cartable -->
+  <rect x="8"  y="16" width="104" height="88" rx="18" fill="#F2A93B"/>
+  <!-- Yeux souriants -->
+  <g fill="none" stroke="#1D1B19" stroke-width="7" stroke-linecap="round">
+    <path d="M32 58 Q42 44 52 58"/>
+    <path d="M68 58 Q78 44 88 58"/>
+  </g>
+  <!-- Fermoirs -->
+  <rect x="22" y="86" width="20" height="24" rx="5" fill="#FFFFFF"/>
+  <rect x="78" y="86" width="20" height="24" rx="5" fill="#FFFFFF"/>
+</svg>

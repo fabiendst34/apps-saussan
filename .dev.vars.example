@@ -1,0 +1,5 @@
+# Copier ce fichier en .dev.vars pour le developpement local (non versionne).
+# Laisser les cles Mailjet vides en local : les e-mails sont alors ecrits
+# dans la console de `wrangler dev` au lieu d'etre envoyes.
+MAILJET_API_KEY=""
+MAILJET_API_SECRET=""

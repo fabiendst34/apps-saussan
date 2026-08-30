@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "apps-saussan",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "apps-saussan",
+      "database_id": "A_REMPLACER_APRES_wrangler_d1_create"
+    }
+  ],
+
+  "vars": {
+    "SITE_URL": "https://apps-saussan.fabien-73c.workers.dev",
+    "SITE_NAME": "APPS — Association des Parents des Pitchouns Saussannais",
+    "CONTACT_EMAIL": "apps.saussan@gmail.com",
+    "MAIL_FROM": "no-reply@apps-saussan.fr",
+    "MAIL_FROM_NAME": "APPS Saussan",
+    "ALLOW_INDEXING": "false",
+
+    // Iterations PBKDF2 pour le hachage des mots de passe.
+    // 50000 ~ 6 ms de CPU : tient dans la limite de 10 ms du plan Workers gratuit.
+    // Sur le plan payant (5 $/mois, limite portee a 30 s), passer a "210000".
+    "PBKDF2_ITERATIONS": "50000"
+  }
+
+  // Secrets a poser avec `wrangler secret put` :
+  //   MAILJET_API_KEY     -> cle publique Mailjet
+  //   MAILJET_API_SECRET  -> cle privee Mailjet
+}
