@@ -55,7 +55,7 @@ function entetePublique(chemin, user) {
   return `<header class="entete"><div class="conteneur entete__inner">
     <a class="marque" href="/">${LOGO_SVG}
       <span><span class="marque__nom">APPS</span>
-      <span class="marque__sous">Parents des Pitchouns Saussannais</span></span>
+      <span class="marque__sous">Association des Parents des Pitchouns Saussannais</span></span>
     </a>
     <button class="nav-bascule" type="button" aria-expanded="false" aria-controls="nav-principale" aria-label="Ouvrir le menu">${icone('menu', { taille: 22 })}</button>
     <nav class="nav" id="nav-principale" aria-label="Navigation principale">
