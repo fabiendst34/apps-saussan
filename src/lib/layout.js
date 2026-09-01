@@ -170,9 +170,9 @@ ${description ? `<meta name="description" content="${esc(description)}">` : ''}
 ${indexable ? '' : '<meta name="robots" content="noindex, nofollow">'}
 <meta name="theme-color" content="#F2A93B">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<link rel="preload" href="/polices/nunito-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/polices/baloo2-700-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/polices.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/styles-app.css">
 </head>
@@ -217,6 +217,7 @@ export const FLASH = {
   'article-modifie': "L'article a bien été modifié.",
   'article-supprime': "L'article a été supprimé du site.",
   'article-restaure': "L'article a été restauré.",
+  'article-annonce': "L'article est publié et les membres viennent d'en être informés par e-mail.",
   'compte-cree': 'Le compte a été créé et l’e-mail d’activation envoyé.',
   'compte-cree-sans-mail': "Le compte a été créé, mais l'e-mail d'activation n'a pas pu être envoyé. Utilisez le bouton « Renvoyer l’invitation ».",
   'compte-modifie': 'Le compte a été mis à jour.',

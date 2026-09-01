@@ -1,7 +1,7 @@
 // Articles « À la une » : redaction cote membres, lecture cote public.
 import {
   esc, html, redirect, uuid, nowIso, field, slugifier, texteArticle,
-  formatDateLong, formatDateShort, formatDateTime, fullName,
+  formatDateLong, formatDateShort, formatDateTime,
 } from '../lib/util.js';
 import { page, messagesFlash, bandeau } from '../lib/layout.js';
 import { icone } from '../lib/icones.js';
@@ -11,6 +11,9 @@ import {
   enregistrerImage, supprimerImage, urlImage, typeAccepte, tailleLisible, TAILLE_MAX,
 } from '../lib/medias.js';
 import { csrfInput, ligneAudit } from './espace.js';
+import { fluxRss, reponseRss } from '../lib/flux.js';
+import { sendEmailGroupe, nouvelArticleEmail } from '../lib/email.js';
+import { fullName } from '../lib/util.js';
 
 const CHAMPS_AUDITES = ['title', 'chapo', 'body', 'status', 'is_featured', 'image_alt', 'image_id'];
 
@@ -83,20 +86,52 @@ export async function sectionALaUne(env) {
 //  Site public
 // =====================================================================
 
+/** Flux RSS des actualites publiees. */
+export async function actualitesRss(env) {
+  const articles = await articlesPublies(env, { limit: 30 });
+  return reponseRss(fluxRss(articles, {
+    siteUrl: env.SITE_URL,
+    titre: 'APPS Saussan \u2014 actualit\u00e9s',
+    description: "Les nouvelles de l'Association des Parents des Pitchouns Saussannais.",
+  }));
+}
+
+const PAR_PAGE_ARTICLES = 12;
+
 export async function actualites(env, url, user) {
-  const articles = await articlesPublies(env, { limit: 40 });
+  const p = Math.max(1, parseInt(url.searchParams.get('p') || '1', 10) || 1);
+  const total = (await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM articles WHERE deleted_at IS NULL AND status = 'publie'"
+  ).first())?.n || 0;
+  const pages = Math.max(1, Math.ceil(total / PAR_PAGE_ARTICLES));
+  const pageCourante = Math.min(p, pages);
+
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM articles WHERE deleted_at IS NULL AND status = 'publie'
+      ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?`
+  ).bind(PAR_PAGE_ARTICLES, (pageCourante - 1) * PAR_PAGE_ARTICLES).all();
+  const articles = results || [];
 
   const contenu = `
 <section class="section"><div class="conteneur">
   <p class="fil"><a href="/">Accueil</a> › Actualités</p>
   <div class="titre-page">
     <div><h1>Actualités</h1><p>Les nouvelles de l'association et des écoles de Saussan.</p></div>
+    <a class="lien-fleche" href="/actualites.rss">${icone('journal', { taille: 17 })}Flux RSS</a>
   </div>
   ${articles.length
     ? `<div class="grille-articles">${articles.map((a) => carteArticle(a)).join('')}</div>`
     : `<div class="vide">${icone('journal', { taille: 34, classe: 'vide__icone' })}
        <h3>Aucune actualité pour le moment</h3>
        <p>Les premières nouvelles seront publiées prochainement.</p></div>`}
+
+  ${pages > 1 ? `<nav class="pagination" aria-label="Pagination des actualités">
+    <a class="${pageCourante <= 1 ? 'inactif' : ''}" href="/actualites${pageCourante > 2 ? `?p=${pageCourante - 1}` : ''}">
+      ${icone('fleche_gauche', { taille: 16 })}Précédent</a>
+    <span class="actuel">${pageCourante} / ${pages}</span>
+    <a class="${pageCourante >= pages ? 'inactif' : ''}" href="/actualites?p=${pageCourante + 1}">
+      Suivant${icone('fleche_droite', { taille: 16 })}</a>
+  </nav>` : ''}
 </div></section>`;
 
   return html(page({
@@ -336,9 +371,9 @@ export function formulaireArticle(env, url, user, session, a = null, erreur = nu
 
       <div class="champ">
         <label class="champ__label" for="chapo">Résumé</label>
-        <textarea id="chapo" name="chapo" maxlength="300" rows="2"
+        <textarea id="chapo" aria-describedby="aide-chapo" name="chapo" maxlength="300" rows="2"
                   placeholder="Une ou deux phrases qui donnent envie de lire la suite.">${v('chapo')}</textarea>
-        <p class="champ__aide">Affiché sur la page d'accueil et dans la liste des actualités.</p>
+        <p class="champ__aide" id="aide-chapo">Affiché sur la page d'accueil et dans la liste des actualités.</p>
       </div>
 
       <fieldset>
@@ -358,17 +393,17 @@ export function formulaireArticle(env, url, user, session, a = null, erreur = nu
         </div>
         <div class="champ">
           <label class="champ__label" for="image_alt">Description de l'image</label>
-          <input type="text" id="image_alt" name="image_alt" maxlength="180" value="${v('image_alt')}"
+          <input type="text" id="image_alt" aria-describedby="aide-image_alt" name="image_alt" maxlength="180" value="${v('image_alt')}"
                  placeholder="Ex. : Les enfants devant les stands du marché de Noël">
-          <p class="champ__aide">Lue par les personnes qui n'accèdent pas à l'image (lecteurs d'écran, connexion lente).</p>
+          <p class="champ__aide" id="aide-image_alt">Lue par les personnes qui n'accèdent pas à l'image (lecteurs d'écran, connexion lente).</p>
         </div>
       </fieldset>
 
       <div class="champ">
         <label class="champ__label" for="body">Texte de l'article</label>
-        <textarea id="body" name="body" maxlength="20000" rows="16"
+        <textarea id="body" aria-describedby="aide-body" name="body" maxlength="20000" rows="16"
                   placeholder="Racontez…">${v('body')}</textarea>
-        <p class="champ__aide">
+        <p class="champ__aide" id="aide-body">
           Mise en forme&nbsp;: <code>## Sous-titre</code> · <code>- liste à puces</code> ·
           <code>**gras**</code> · <code>*italique*</code>. Une ligne vide sépare deux paragraphes,
           les adresses web deviennent des liens.
@@ -384,11 +419,18 @@ export function formulaireArticle(env, url, user, session, a = null, erreur = nu
             <span class="petit muet">Sans cette case, l'article reste un brouillon visible uniquement ici.</span></span>
           </label>
         </div>
-        <div class="champ" style="margin-bottom:0">
+        <div class="champ">
           <label class="case">
             <input type="checkbox" name="is_featured" value="1"${a?.is_featured ? ' checked' : ''}>
             <span><strong>Mettre à la une</strong><br>
             <span class="petit muet">Remonte l'article dans la section « À la une » de la page d'accueil.</span></span>
+          </label>
+        </div>
+        <div class="champ" style="margin-bottom:0">
+          <label class="case">
+            <input type="checkbox" name="prevenir" value="1">
+            <span><strong>Prévenir les membres par e-mail</strong><br>
+            <span class="petit muet">Un message part vers tous les comptes actifs, avec le titre et le lien. À n'utiliser qu'une fois l'article prêt.</span></span>
           </label>
         </div>
       </fieldset>
@@ -535,7 +577,10 @@ export async function creerArticlePost(env, request, url, user, session) {
     entityLabel: data.title, changes: diff({}, { ...data, image_id: image.imageId }, CHAMPS_AUDITES),
   });
 
-  return redirect(`/espace/articles/${id}?ok=${data.status === 'publie' ? 'article-publie' : 'article-cree'}`);
+  const prevenu = await prevenirLesMembres(env, request, user, form, { ...data, id, slug });
+
+  return redirect(`/espace/articles/${id}?ok=${prevenu ? 'article-annonce'
+    : data.status === 'publie' ? 'article-publie' : 'article-cree'}`);
 }
 
 export async function modifierArticlePost(env, request, url, user, session, id) {
@@ -569,7 +614,37 @@ export async function modifierArticlePost(env, request, url, user, session, id) 
     });
   }
 
-  return redirect(`/espace/articles/${id}?ok=article-modifie`);
+  const prevenu = await prevenirLesMembres(env, request, user, form, { ...data, id, slug: avant.slug });
+
+  return redirect(`/espace/articles/${id}?ok=${prevenu ? 'article-annonce' : 'article-modifie'}`);
+}
+
+/**
+ * Previent les membres actifs si la case a ete cochee et que l'article est
+ * bien publie : annoncer un brouillon enverrait vers une page introuvable.
+ * L'echec d'envoi n'interrompt pas l'enregistrement de l'article.
+ */
+async function prevenirLesMembres(env, request, user, form, article) {
+  if (form.get('prevenir') !== '1' || article.status !== 'publie') return false;
+
+  const { results } = await env.DB.prepare(
+    "SELECT email, first_name, last_name FROM users WHERE status = 'actif' AND email <> ?"
+  ).bind(user.email).all();
+
+  const destinataires = (results || []).map((m) => ({
+    email: m.email,
+    nom: `${m.first_name || ''} ${m.last_name || ''}`.trim(),
+  }));
+  if (!destinataires.length) return false;
+
+  const envoi = await sendEmailGroupe(env, destinataires,
+    nouvelArticleEmail(env, article, fullName(user)));
+
+  await logAudit(env, request, {
+    actor: user, action: 'article.annonce', entityType: 'article', entityId: article.id,
+    entityLabel: `${article.title} — ${envoi.envoyes} destinataire(s)`,
+  });
+  return true;
 }
 
 export async function supprimerArticlePost(env, request, url, user, session, id) {

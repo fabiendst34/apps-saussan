@@ -199,8 +199,8 @@ export function formulaireCompte(env, url, user, session, cible = null, erreur =
 
       <div class="champ">
         <label class="champ__label" for="email">Adresse e-mail <span class="champ__requis">*</span></label>
-        <input type="email" id="email" name="email" required maxlength="150" value="${v('email')}">
-        <p class="champ__aide">Elle sert d'identifiant de connexion et reçoit le lien d'activation.</p>
+        <input type="email" id="email" aria-describedby="aide-email" name="email" required maxlength="150" value="${v('email')}">
+        <p class="champ__aide" id="aide-email">Elle sert d'identifiant de connexion et reçoit le lien d'activation.</p>
       </div>
 
       <div class="duo">
@@ -217,20 +217,20 @@ export function formulaireCompte(env, url, user, session, cible = null, erreur =
       <div class="duo">
         <div class="champ">
           <label class="champ__label" for="role">Rôle</label>
-          <select id="role" name="role">
+          <select id="role" aria-describedby="aide-role" name="role">
             ${Object.entries(ROLES).map(([k, l]) =>
               `<option value="${k}"${(cible?.role || 'membre') === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}
           </select>
-          <p class="champ__aide">Un administrateur peut gérer les comptes et consulter le journal d'audit.</p>
+          <p class="champ__aide" id="aide-role">Un administrateur peut gérer les comptes et consulter le journal d'audit.</p>
         </div>
         ${edition ? `
         <div class="champ">
           <label class="champ__label" for="status">Statut</label>
-          <select id="status" name="status">
+          <select id="status" aria-describedby="aide-status" name="status">
             ${Object.entries(STATUTS).map(([k, l]) =>
               `<option value="${k}"${cible.status === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}
           </select>
-          <p class="champ__aide">Un compte suspendu ne peut plus se connecter.</p>
+          <p class="champ__aide" id="aide-status">Un compte suspendu ne peut plus se connecter.</p>
         </div>` : '<div></div>'}
       </div>
 

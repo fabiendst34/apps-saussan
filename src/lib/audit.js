@@ -20,6 +20,7 @@ export const ACTION_LABELS = {
   'article.update': 'Article modifié',
   'article.delete': 'Article supprimé',
   'article.restore': 'Article restauré',
+  'article.annonce': 'Article annoncé aux membres',
   'user.create': 'Compte créé',
   'user.update': 'Compte modifié',
   'user.delete': 'Compte supprimé',

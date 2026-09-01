@@ -154,7 +154,7 @@ a.evenement:hover { transform: translateX(3px); box-shadow: var(--ombre-md); }
 .cal-liste-mobile { display: none; }
 
 @media (max-width: 760px) {
-  .cal-grille { display: none; }
+  .cal-grille, table.cal-grille { display: none; }
   .cal-liste-mobile { display: block; }
 }
 
@@ -505,3 +505,31 @@ input[type="file"]::file-selector-button:hover { background: #2E2A26; }
   .alaune--seul .article-carte--grande .article-carte__image { height: 100%; aspect-ratio: auto; min-height: 300px; }
   .alaune--seul .article-carte--grande .article-carte__corps { align-self: center; padding: 2rem 2.25rem; }
 }
+
+/* Le calendrier est un <table> : on neutralise les styles de tableau
+   generiques pour conserver l'aspect grille. */
+table.cal-grille {
+  display: table; border-collapse: separate; border-spacing: 0;
+  width: 100%; table-layout: fixed;
+}
+table.cal-grille thead th.cal-jour-nom { border-bottom: 1px solid var(--bord); }
+table.cal-grille th, table.cal-grille td { border: 0; vertical-align: top; }
+table.cal-grille tbody tr:hover { background: transparent; }
+table.cal-grille tbody td { border-right: 1px solid var(--bord); border-bottom: 1px solid var(--bord); }
+/* Un td ne peut pas etre un conteneur flex sans sortir du modele de
+   tableau : les enfants s empilent par leurs marges. */
+table.cal-grille td.cal-case { display: table-cell; height: 118px; }
+table.cal-grille .cal-numero { margin-bottom: .3rem; }
+table.cal-grille .cal-puce { margin-bottom: .2rem; }
+table.cal-grille .cal-puce:last-child { margin-bottom: 0; }
+table.cal-grille tbody tr td:last-child { border-right: 0; }
+table.cal-grille tbody tr:last-child td { border-bottom: 0; }
+.cal-jour-nom abbr { text-decoration: none; border: 0; }
+
+/* Encart d'abonnement au calendrier */
+.encart--abonnement {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+}
+.agenda-lien { margin: .5rem 0 0 calc(76px + 1.25rem); font-size: .9rem; }
+@media (max-width: 520px) { .agenda-lien { margin-left: calc(60px + .9rem); } }

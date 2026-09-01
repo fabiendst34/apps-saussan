@@ -1,8 +1,8 @@
 // Espace membres : calendrier partage, gestion des evenements, compte personnel.
 import {
-  esc, richText, html, redirect, uuid, nowIso, field, withQuery,
-  parseDate, toDateKey, todayKey, formatDateLong, formatDateShort, formatDateTime,
-  formatRange, fullName, MOIS_NOMS, JOURS_COURTS,
+  esc, richText, html, redirect, uuid, nowIso, field,
+  parseDate, toDateKey, todayKey, formatDateShort, formatDateTime,
+  formatRange, fullName, MOIS_NOMS, JOURS_COURTS, JOURS_LONGS,
 } from '../lib/util.js';
 import { page, messagesFlash, bandeau } from '../lib/layout.js';
 import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
@@ -82,9 +82,16 @@ export async function calendrier(env, url, user, session) {
       href="/espace/evenements/${esc(ev.id)}" title="${esc(ev.title)}">${verrou}<span>${heure}${esc(ev.title)}</span></a>`;
   };
 
-  const grille = `<div class="cal-grille">
-    ${JOURS_COURTS.map((j) => `<div class="cal-jour-nom">${j}</div>`).join('')}
-    ${cases.map((c) => {
+  // Un vrai tableau : les lecteurs d'ecran annoncent alors le jour de la
+  // semaine avec chaque case, ce qu'une grille de div ne permet pas.
+  const semaines = [];
+  for (let i = 0; i < cases.length; i += 7) semaines.push(cases.slice(i, i + 7));
+
+  const grille = `<table class="cal-grille">
+    <caption class="sr-only">Calendrier de ${MOIS_NOMS[mois]} ${annee}</caption>
+    <thead><tr>${JOURS_COURTS.map((j, i) =>
+      `<th scope="col" class="cal-jour-nom"><abbr title="${esc(JOURS_LONGS[i])}">${j}</abbr></th>`).join('')}</tr></thead>
+    <tbody>${semaines.map((semaine) => `<tr>${semaine.map((c) => {
       const evs = parJour.get(c.cle) || [];
       const visibles = evs.slice(0, 3);
       const reste = evs.length - visibles.length;
@@ -93,13 +100,13 @@ export async function calendrier(env, url, user, session) {
       if (c.horsMois) classes.push('cal-case--hors');
       else if (jour === 0 || jour === 6) classes.push('cal-case--weekend');
       if (c.cle === aujourdhui) classes.push('cal-case--aujourdhui');
-      return `<div class="${classes.join(' ')}">
+      return `<td class="${classes.join(' ')}"${c.cle === aujourdhui ? ' aria-current="date"' : ''}>
         <span class="cal-numero">${c.date.getDate()}</span>
         ${visibles.map(puce).join('')}
         ${reste > 0 ? `<span class="cal-plus">+${reste} autre${reste > 1 ? 's' : ''}</span>` : ''}
-      </div>`;
-    }).join('')}
-  </div>`;
+      </td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table>`;
 
   // Sur mobile, la grille cede la place a une liste chronologique du mois.
   const duMois = (results || []).filter((e) => e.start_date.slice(0, 7) === m || e.end_date.slice(0, 7) === m);
@@ -374,8 +381,8 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
         <div class="duo">
           <div class="champ">
             <label class="champ__label" for="end_date">Date de fin</label>
-            <input type="date" id="end_date" name="end_date" value="${v('end_date')}">
-            <p class="champ__aide">À laisser vide si l'événement tient sur une seule journée.</p>
+            <input type="date" id="end_date" aria-describedby="aide-end_date" name="end_date" value="${v('end_date')}">
+            <p class="champ__aide" id="aide-end_date">À laisser vide si l'événement tient sur une seule journée.</p>
           </div>
           <div class="champ" data-horaire>
             <label class="champ__label" for="end_time">Heure de fin</label>
@@ -569,7 +576,7 @@ export function monCompte(env, url, user, session, erreur = null) {
       </div>
       <div class="champ">
         <label class="champ__label" for="phone">Téléphone <span class="muet petit">(facultatif)</span></label>
-        <input type="tel" id="phone" name="phone" maxlength="25" value="${esc(user.phone)}">
+        <input type="tel" id="phone" aria-describedby="aide-phone" name="phone" maxlength="25" value="${esc(user.phone)}">
       </div>
       <p class="champ__aide" style="margin-bottom:1rem">Votre adresse e-mail sert d'identifiant&nbsp;: seule l'administration peut la modifier.</p>
       <button class="btn btn--principal" type="submit">Enregistrer</button>
@@ -591,7 +598,7 @@ export function monCompte(env, url, user, session, erreur = null) {
         </div>
         <div class="champ">
           <label class="champ__label" for="nouveau2">Confirmation</label>
-          <input type="password" id="nouveau2" name="nouveau2" required autocomplete="new-password">
+          <input type="password" id="nouveau2" aria-describedby="aide-nouveau2" name="nouveau2" required autocomplete="new-password">
         </div>
       </div>
       <p class="champ__aide" style="margin-bottom:1rem">Au moins 10 caractères, dont une lettre et un chiffre. Vos autres sessions seront fermées.</p>

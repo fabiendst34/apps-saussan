@@ -122,8 +122,8 @@ export async function activationPage(env, url, erreur = null) {
   <input type="hidden" name="token" value="${esc(token)}">
   <div class="champ">
     <label class="champ__label" for="password">Choisissez un mot de passe</label>
-    <input type="password" id="password" name="password" required autocomplete="new-password" autofocus minlength="10">
-    <p class="champ__aide">${AIDE_MDP}</p>
+    <input type="password" id="password" aria-describedby="aide-password" name="password" required autocomplete="new-password" autofocus minlength="10">
+    <p class="champ__aide" id="aide-password">${AIDE_MDP}</p>
   </div>
   <div class="champ">
     <label class="champ__label" for="password2">Confirmez le mot de passe</label>
@@ -178,8 +178,8 @@ export function oubliPage(env, url, erreur = null) {
 <form method="post" action="/espace/mot-de-passe-oublie">
   <div class="champ">
     <label class="champ__label" for="email">Votre adresse e-mail</label>
-    <input type="email" id="email" name="email" required autocomplete="username" autofocus>
-    <p class="champ__aide">Si un compte existe, vous recevrez un lien de réinitialisation.</p>
+    <input type="email" id="email" aria-describedby="aide-email" name="email" required autocomplete="username" autofocus>
+    <p class="champ__aide" id="aide-email">Si un compte existe, vous recevrez un lien de réinitialisation.</p>
   </div>
   <button class="btn btn--principal btn--bloc" type="submit">Recevoir un lien</button>
 </form>`;
@@ -240,8 +240,8 @@ export async function reinitPage(env, url, erreur = null) {
   <input type="hidden" name="token" value="${esc(token)}">
   <div class="champ">
     <label class="champ__label" for="password">Nouveau mot de passe</label>
-    <input type="password" id="password" name="password" required autocomplete="new-password" autofocus minlength="10">
-    <p class="champ__aide">${AIDE_MDP}</p>
+    <input type="password" id="password" aria-describedby="aide-password" name="password" required autocomplete="new-password" autofocus minlength="10">
+    <p class="champ__aide" id="aide-password">${AIDE_MDP}</p>
   </div>
   <div class="champ">
     <label class="champ__label" for="password2">Confirmez</label>

@@ -104,3 +104,63 @@ export function contactNotificationEmail(env, message) {
   const text = `Nouveau message depuis le site APPS\n\nDe : ${message.name} <${message.email}>\nSujet : ${message.subject}\n\n${message.body}`;
   return { subject: `[Site APPS] ${message.subject || 'Nouveau message'}`, html, text };
 }
+
+/**
+ * Envoi groupe : un seul appel a l'API pour plusieurs destinataires.
+ *
+ * Le plan Workers gratuit limite une requete a 50 sous-requetes ; envoyer un
+ * message par membre les epuiserait. Mailjet accepte jusqu'a 50 messages par
+ * appel, ce qui ramene la notification de tout le bureau a une seule.
+ */
+export async function sendEmailGroupe(env, destinataires, { subject, html, text }) {
+  if (!destinataires.length) return { ok: true, envoyes: 0 };
+
+  if (!env.MAILJET_API_KEY || !env.MAILJET_API_SECRET) {
+    console.log(`[${destinataires.length} e-mail(s) non envoyé(s) — Mailjet non configuré] ${subject}`);
+    return { ok: false, skipped: true, envoyes: 0 };
+  }
+
+  let envoyes = 0;
+  // Par tranches de 50, la limite de l'API.
+  for (let i = 0; i < destinataires.length; i += 50) {
+    const tranche = destinataires.slice(i, i + 50);
+    const payload = {
+      Messages: tranche.map((d) => ({
+        From: { Email: env.MAIL_FROM, Name: env.MAIL_FROM_NAME || 'APPS Saussan' },
+        To: [{ Email: d.email, Name: d.nom || d.email }],
+        Subject: subject,
+        TextPart: text,
+        HTMLPart: html,
+        ReplyTo: { Email: env.CONTACT_EMAIL },
+      })),
+    };
+    try {
+      const res = await fetch(MAILJET_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: 'Basic ' + btoa(`${env.MAILJET_API_KEY}:${env.MAILJET_API_SECRET}`),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) envoyes += tranche.length;
+      else console.error('mailjet: envoi groupé refusé', res.status, await res.text());
+    } catch (err) {
+      console.error('mailjet: erreur réseau sur l’envoi groupé', err);
+    }
+  }
+  return { ok: envoyes > 0, envoyes };
+}
+
+/** Previent les membres qu'un article vient de paraitre. */
+export function nouvelArticleEmail(env, article, auteurNom) {
+  const lien = `${env.SITE_URL}/actualites/${article.slug}`;
+  const title = `Nouvel article : ${article.title}`;
+  const html = wrap(env, esc(article.title),
+    `<p style="margin:0 0 14px;line-height:1.6;">${esc(auteurNom)} vient de publier un article sur le site de l'association.</p>`
+    + (article.chapo ? `<p style="margin:0 0 14px;line-height:1.6;color:#5C5348;">${esc(article.chapo)}</p>` : '')
+    + button(lien, "Lire l'article")
+    + `<p style="font-size:12px;color:#6B6257;margin:18px 0 0;">Vous recevez ce message parce que vous êtes membre de l'APPS.</p>`);
+  const text = `${auteurNom} vient de publier un article sur le site de l'association.\n\n${article.title}\n${article.chapo || ''}\n\n${lien}\n\nAPPS — ${env.CONTACT_EMAIL}`;
+  return { subject: title, html, text };
+}

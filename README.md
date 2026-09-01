@@ -3,7 +3,7 @@
 Site public + espace membres avec calendrier partagé + back-office d'administration,
 sur Cloudflare Workers et D1.
 
-- **Partie publique** — accueil avec section « À la une », actualités, l'association, événements, adhésion en ligne (widget HelloAsso), contact, mentions légales, confidentialité.
+- **Partie publique** — accueil avec section « À la une », actualités, l'association, événements, adhésion en ligne (widget HelloAsso), contact, mentions légales, confidentialité. Flux d'abonnement iCalendar et RSS.
 - **Espace membres** (connexion e-mail / mot de passe) — calendrier de l'année, création / modification / suppression d'événements, rédaction d'articles « À la une » avec image mise en avant, chaque action étant tracée.
 - **Administration** (réservée au rôle `admin`) — création et gestion des comptes, envoi des e-mails d'activation, journal d'audit complet avec filtres et export CSV, messages reçus.
 
@@ -144,6 +144,57 @@ vide et un statut 200 — l'erreur est silencieuse.
 
 ---
 
+## Flux d'abonnement
+
+| Adresse | Contenu |
+| --- | --- |
+| `/calendrier.ics` | tous les événements publics, à ajouter dans un agenda |
+| `/evenements/<id>.ics` | un seul événement (bouton « Ajouter à mon agenda ») |
+| `/actualites.rss` | les trente derniers articles publiés |
+
+Le calendrier embarque une définition du fuseau `Europe/Paris`, de sorte que les
+heures restent justes de part et d'autre du changement d'heure. Les événements
+internes n'y figurent jamais.
+
+---
+
+## Sécurité des en-têtes
+
+Chaque page HTML est servie avec une `Content-Security-Policy`. Les scripts sont
+autorisés par **nonce**, régénéré à chaque réponse et injecté dans les balises au
+moment de l'envoi : un script introduit par une faille d'échappement n'en
+porterait pas et ne s'exécuterait pas.
+
+`style-src` conserve `'unsafe-inline'`, l'interface utilisant des attributs
+`style` ponctuels. C'est un compromis assumé : le risque n'a pas de commune
+mesure avec celui des scripts.
+
+Les polices sont **servies par le Worker** et non par Google Fonts. Aucune
+adresse IP de visiteur ne part vers un tiers, ce qui rend la page Confidentialité
+exacte et permet un `font-src 'self'` strict. Seul le domaine HelloAsso est
+autorisé, en `frame-src`, pour le formulaire d'adhésion.
+
+---
+
+## Entretien et sauvegarde
+
+Les sessions et jetons expirés sont supprimés automatiquement, environ une
+requête sur cinquante, après l'envoi de la réponse. Sans cela les deux tables
+grossiraient indéfiniment.
+
+Pour exporter la base hors de Cloudflare :
+
+```bash
+node scripts/sauvegarde.mjs
+```
+
+Le fichier obtenu est un script SQL rejouable avec
+`wrangler d1 execute apps-saussan --remote --file=<fichier>`. Les images sont
+exclues par défaut vu leur poids ; ajouter `--avec-images` pour les inclure.
+La restauration a été vérifiée sur la base de développement.
+
+---
+
 ## Architecture
 
 ```
@@ -153,9 +204,11 @@ src/
     util.js           échappement HTML, dates françaises, réponses HTTP
     auth.js           PBKDF2, sessions, CSRF, jetons à usage unique
     audit.js          écriture du journal, calcul des différences
-    email.js          envoi Mailjet et gabarits des e-mails
+    email.js          envoi Mailjet, gabarits, envoi groupé
     medias.js         stockage des images (voir « Images » ci-dessous)
     icones.js         jeu d'icônes SVG maison
+    flux.js           calendrier iCalendar et flux RSS
+    entetes.js        en-têtes de sécurité et entretien de la base
     layout.js         squelette HTML, navigations, pied de page
   routes/
     public.js         site public
@@ -163,11 +216,14 @@ src/
     espace.js         calendrier, CRUD événements, compte personnel
     articles.js       articles « À la une », côté membres et côté public
     admin.js          comptes, journal d'audit, messages
+scripts/
+  premier-admin.mjs   amorce le premier compte administrateur
+  sauvegarde.mjs      export SQL de la base
 db/
   schema.sql          schéma D1 (idempotent)
   seed.sql            jeu de démonstration — local uniquement
   reset.sql           suppression de toutes les tables
-public/               feuilles de style, logo, favicon, robots.txt
+public/               feuilles de style, polices, logo, favicon, robots.txt
 ```
 
 ### Sécurité
@@ -182,6 +238,8 @@ public/               feuilles de style, logo, favicon, robots.txt
   7 jours et 2 heures.
 - Un changement de mot de passe ou une suspension ferme toutes les sessions du compte.
 - Échappement systématique de toute valeur injectée dans le HTML.
+- `Content-Security-Policy` par nonce, `Strict-Transport-Security`,
+  `X-Frame-Options` et `Permissions-Policy` sur chaque réponse.
 
 ### Audit
 

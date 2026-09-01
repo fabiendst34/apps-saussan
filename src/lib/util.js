@@ -60,6 +60,8 @@ const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 's
 
 export const MOIS_NOMS = MOIS_ACC;
 export const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+/** Noms complets, lus par les technologies d'assistance derriere les abreviations. */
+export const JOURS_LONGS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 /** Abreviations d'usage en francais : « sept. », « oct. », mais « mai » et « juin » en entier. */
 export const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
   'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];

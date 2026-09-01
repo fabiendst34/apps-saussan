@@ -6,6 +6,7 @@ import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
 import { logAudit } from '../lib/audit.js';
 import { sendEmail, contactNotificationEmail } from '../lib/email.js';
 import { sectionALaUne } from './articles.js';
+import { calendrierIcs, reponseIcs } from '../lib/flux.js';
 
 export const CATEGORIES = {
   reunion: 'Réunion',
@@ -142,6 +143,34 @@ ${alaune}
   }));
 }
 
+/**
+ * Calendrier public au format iCalendar. Les agendas s'y abonnent : le fichier
+ * est relu regulierement et les nouvelles dates apparaissent toutes seules.
+ */
+export async function calendrierPublicIcs(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM events WHERE deleted_at IS NULL AND is_public = 1
+      ORDER BY start_date LIMIT 500`
+  ).all();
+  const ics = calendrierIcs(results || [], {
+    siteUrl: env.SITE_URL,
+    nom: "APPS Saussan \u2014 \u00e9v\u00e9nements",
+  });
+  return reponseIcs(ics, 'apps-saussan.ics');
+}
+
+/** Un seul evenement, pour le bouton « Ajouter a mon agenda ». */
+export async function evenementIcs(env, id) {
+  const ev = await env.DB.prepare(
+    'SELECT * FROM events WHERE id = ? AND deleted_at IS NULL AND is_public = 1'
+  ).bind(id).first();
+  if (!ev) return null;
+  return reponseIcs(
+    calendrierIcs([ev], { siteUrl: env.SITE_URL, nom: ev.title }),
+    `${ev.id}.ics`
+  );
+}
+
 // --- L'association ---------------------------------------------------
 
 export async function association(env, url, user) {
@@ -197,7 +226,7 @@ export async function evenements(env, url, user) {
   const passes = await evenementsPublics(env, { limit: 12, passes: true });
 
   const bloc = (liste, passe) => liste.length
-    ? `<div class="pile">${liste.map((e) => `<div id="ev-${esc(e.id)}">${carteEvenement(e, null, passe)}</div>`).join('')}</div>`
+    ? `<div class="pile">${liste.map((e) => `<div id="ev-${esc(e.id)}">${carteEvenement(e, null, passe)}${passe ? '' : `<p class="agenda-lien"><a class="lien-fleche" href="/evenements/${esc(e.id)}.ics">${icone('calendrier', { taille: 16 })}Ajouter \u00e0 mon agenda</a></p>`}</div>`).join('')}</div>`
     : `<div class="vide">${icone('calendrier', { taille: 34, classe: 'vide__icone' })}<h3>Aucun événement</h3>
        <p>${passe ? "L'historique se remplira au fil de l'année." : 'Le programme sera publié prochainement.'}</p></div>`;
 
@@ -211,9 +240,17 @@ export async function evenements(env, url, user) {
 
   ${passes.length ? `<h2 style="margin-top:3rem">Déjà passés</h2>${bloc(passes, true)}` : ''}
 
-  <div class="encart" style="margin-top:2.5rem">
-    Vous êtes membre de l'association&nbsp;? Le <a href="/espace">calendrier interne</a> contient également les réunions et dates de préparation.
+  <div class="encart encart--abonnement" style="margin-top:2.5rem">
+    <div>
+      <h2 style="font-size:1.15rem;margin-bottom:.25rem">Recevoir les dates dans votre agenda</h2>
+      <p class="petit" style="margin:0">Abonnez-vous une fois&nbsp;: les nouvelles dates arrivent ensuite toutes seules dans votre téléphone.</p>
+    </div>
+    <a class="btn btn--principal" href="/calendrier.ics">${icone('telecharger', { taille: 17 })}S'abonner au calendrier</a>
   </div>
+
+  <p class="petit muet" style="margin-top:1.25rem">
+    Vous êtes membre de l'association&nbsp;? Le <a href="/espace">calendrier interne</a> contient aussi les réunions et dates de préparation.
+  </p>
 </div></section>`;
 
   return html(page({
@@ -322,7 +359,7 @@ export function contact(env, url, user, erreurs = null, valeurs = {}) {
         </div>
         <div class="champ" style="position:absolute;left:-9999px" aria-hidden="true">
           <label for="site">Ne pas remplir</label>
-          <input type="text" id="site" name="site" tabindex="-1" autocomplete="off">
+          <input type="text" id="site" aria-describedby="aide-site" name="site" tabindex="-1" autocomplete="off">
         </div>
         <button class="btn btn--principal btn--bloc" type="submit">Envoyer le message</button>
         <p class="champ__aide" style="margin-top:.75rem">Vos coordonnées servent uniquement à vous répondre et ne sont jamais transmises à des tiers.</p>

@@ -11,6 +11,7 @@ import * as espace from './routes/espace.js';
 import * as admin from './routes/admin.js';
 import * as articles from './routes/articles.js';
 import { servirImage } from './lib/medias.js';
+import { entetesSecurite, nouveauNonce, entretien, deTempsEnTemps } from './lib/entetes.js';
 
 /**
  * Protection CSRF de premier niveau : tout POST doit provenir du site lui-meme.
@@ -35,6 +36,40 @@ function segments(pathname) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const reponse = await routerRequete(request, env, ctx, url);
+
+    // L'entretien tourne apres l'envoi de la reponse : il n'allonge pas l'affichage.
+    if (deTempsEnTemps()) ctx.waitUntil(entretien(env));
+
+    return securiser(reponse, url);
+  },
+};
+
+/**
+ * Pose les en-tetes de securite. Pour le HTML, un nonce est genere par reponse
+ * et injecte dans chaque script en ligne : la Content-Security-Policy rejette
+ * alors tout script qui n'en porterait pas.
+ */
+async function securiser(reponse, url) {
+  const type = reponse.headers.get('content-type') || '';
+  const nonce = nouveauNonce();
+
+  if (!type.includes('text/html')) {
+    const copie = new Response(reponse.body, reponse);
+    copie.headers.set('x-content-type-options', 'nosniff');
+    if (url.protocol === 'https:') {
+      copie.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+    }
+    return copie;
+  }
+
+  const marqueur = `<script nonce="${nonce}"`;
+  const corps = (await reponse.text()).replace(/<script(?![^>]*nonce=)/g, marqueur);
+  return entetesSecurite(new Response(corps, reponse), nonce, url);
+}
+
+/** Routage : chaque URL est declaree, tout le reste tombe en 404. */
+async function routerRequete(request, env, ctx, url) {
     const chemin = url.pathname.replace(/\/+$/, '') || '/';
     // HEAD est traite comme GET : la plateforme se charge de retirer le corps.
     const methode = request.method === 'HEAD' ? 'GET' : request.method;
@@ -77,9 +112,17 @@ export default {
           case '/contact':           return pub.contact(env, url, user);
           case '/mentions-legales':  return pub.mentionsLegales(env, url, user);
           case '/confidentialite':   return pub.confidentialite(env, url, user);
+          case '/calendrier.ics':    return pub.calendrierPublicIcs(env);
+          case '/actualites.rss':    return articles.actualitesRss(env);
         }
       }
       if (methode === 'POST' && chemin === '/contact') return pub.contactPost(env, request, url, user);
+
+      // /evenements/:id.ics — bouton « Ajouter a mon agenda »
+      if (seg[0] === 'evenements' && seg[1]?.endsWith('.ics') && !seg[2] && methode === 'GET') {
+        const reponse = await pub.evenementIcs(env, seg[1].slice(0, -4));
+        return reponse || pub.page404(env, url, user);
+      }
 
       // /actualites/:slug
       if (seg[0] === 'actualites' && seg[1] && !seg[2] && methode === 'GET') {
@@ -224,5 +267,4 @@ export default {
 </div></section>`;
       return html(page({ titre: 'Erreur', contenu, chemin, env, user: null }), { status: 500 });
     }
-  },
-};
+}
