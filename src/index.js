@@ -36,6 +36,14 @@ function segments(pathname) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Une seule adresse fait autorite : www renvoie vers le domaine nu,
+    // pour ne pas exposer deux versions identiques du site.
+    if (url.hostname.startsWith("www.")) {
+      url.hostname = url.hostname.slice(4);
+      return Response.redirect(url.toString(), 301);
+    }
+
     const reponse = await routerRequete(request, env, ctx, url);
 
     // L'entretien tourne apres l'envoi de la reponse : il n'allonge pas l'affichage.
