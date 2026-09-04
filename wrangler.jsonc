@@ -15,6 +15,19 @@
     "binding": "ASSETS"
   },
 
+  // Le sous-domaine workers.dev reste ouvert le temps de la bascule : declarer
+  // des routes le desactive sinon d'office, ce qui coupe le site tant que le
+  // nouveau domaine n'est pas propage. A repasser a false une fois la
+  // transition terminee, pour n'exposer qu'une seule adresse.
+  "workers_dev": true,
+
+  // Domaine de l'association. Cloudflare cree l'enregistrement DNS et le
+  // certificat automatiquement ; le Worker redirige www vers le domaine nu.
+  "routes": [
+    { "pattern": "apps-saussan.fr", "custom_domain": true },
+    { "pattern": "www.apps-saussan.fr", "custom_domain": true }
+  ],
+
   "observability": {
     "enabled": true
   },
@@ -28,7 +41,7 @@
   ],
 
   "vars": {
-    "SITE_URL": "https://apps-saussan.fabien-73c.workers.dev",
+    "SITE_URL": "https://apps-saussan.fr",
     "SITE_NAME": "APPS — Association des Parents des Pitchouns Saussannais",
     "CONTACT_EMAIL": "apps.saussan@gmail.com",
     "MAIL_FROM": "apps.saussan@gmail.com",
