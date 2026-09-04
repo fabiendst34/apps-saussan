@@ -37,6 +37,14 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Rien ne doit transiter en clair : un formulaire de connexion servi
+    // en HTTP enverrait le mot de passe non chiffre, et le cookie de
+    // session serait pose sans l'attribut Secure.
+    if (url.protocol === "http:") {
+      url.protocol = "https:";
+      return Response.redirect(url.toString(), 301);
+    }
+
     // Une seule adresse fait autorite : www renvoie vers le domaine nu,
     // pour ne pas exposer deux versions identiques du site.
     if (url.hostname.startsWith("www.")) {
