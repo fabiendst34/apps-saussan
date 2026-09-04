@@ -151,8 +151,14 @@ hr { border: 0; border-top: 1px solid var(--bord); margin: 2rem 0; }
 }
 .nav a:hover { background: var(--jaune-pale); color: var(--noir); }
 .nav a[aria-current="page"] { background: var(--noir); color: var(--blanc); }
+/* Les boutons de la navigation doivent reprendre la main sur `.nav a`,
+   dont le selecteur est plus specifique : sans cela le libelle heritait
+   de la couleur encre et devenait illisible sur le fond noir. */
 .nav .btn { margin-left: .4rem; }
-.nav .btn:hover { background: var(--jaune-fonce); }
+.nav a.btn--principal { color: var(--jaune); }
+.nav a.btn--principal:hover { background: #2E2A26; color: var(--jaune); }
+.nav a.btn--jaune { color: var(--noir); }
+.nav a.btn--jaune:hover { background: var(--jaune-fonce); color: var(--noir); }
 
 .nav-bascule {
   display: none; margin-left: auto; background: none; border: 1.5px solid var(--bord-fort);
@@ -235,12 +241,14 @@ a.carte:hover { transform: translateY(-3px); box-shadow: var(--ombre-md); border
 .etiquette--gris   { background: #F0EDE8;            color: var(--gris); }
 .etiquette--noir   { background: var(--noir);        color: var(--jaune); }
 
-/* Categories d evenements : chaque categorie porte sa couleur via --cat */
+/* Categories d evenements : chaque categorie porte sa couleur via --cat.
+   Les tons sont calibres pour depasser 4,5:1 sur leur propre fond pale,
+   les etiquettes etant composees en petit corps. */
 .cat-reunion { --cat: #2C6E9B; --cat-pale: #E5F0F7; }
-.cat-ecole   { --cat: #2E8B62; --cat-pale: #E4F4EB; }
+.cat-ecole   { --cat: #236E4C; --cat-pale: #E4F4EB; }
 .cat-vente   { --cat: #7A5AA8; --cat-pale: #F0EAF8; }
-.cat-fete    { --cat: #C2681A; --cat-pale: #FCEDDF; }
-.cat-sortie  { --cat: #1F7A8C; --cat-pale: #E2F1F4; }
+.cat-fete    { --cat: #9C4F10; --cat-pale: #FCEDDF; }
+.cat-sortie  { --cat: #1B6B7A; --cat-pale: #E2F1F4; }
 .cat-autre   { --cat: #6B6257; --cat-pale: #F0EDE8; }
 .etiquette-cat { background: var(--cat-pale); color: var(--cat); }
 
