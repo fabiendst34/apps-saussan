@@ -93,7 +93,7 @@ ${alaune}
       </div>
       <div class="mission">
         <dt>${icone('tirelire', { taille: 22 })}<span>Financer les projets</span></dt>
-        <dd>Chaque euro récolté lors de nos actions repart vers les classes&nbsp;: sorties, spectacles, matériel pédagogique, classes découvertes.</dd>
+        <dd>L'essentiel des sommes récoltées repart vers les classes&nbsp;: sorties, spectacles, matériel pédagogique, séjours découverte. Le reste constitue la trésorerie qui permet de lancer les actions suivantes.</dd>
       </div>
       <div class="mission">
         <dt>${icone('megaphone', { taille: 22 })}<span>Porter la voix des parents</span></dt>

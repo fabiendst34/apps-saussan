@@ -102,7 +102,7 @@ INSERT INTO articles (id, slug, title, chapo, body, image_id, image_alt, status,
   '- 18 stands tenus par les enfants' || char(10) ||
   '- 240 crêpes vendues' || char(10) ||
   '- 1 240 € de bénéfice' || char(10) || char(10) ||
-  'La totalité de cette somme part vers la classe découverte des CM1-CM2 en Cévennes, au mois de mai.' || char(10) || char(10) ||
+  'L''essentiel de cette somme part vers la classe découverte des CM1-CM2 en Cévennes, au mois de mai.' || char(10) || char(10) ||
   'Un grand merci à *toutes les familles* qui ont donné de leur temps, prêté du matériel ou simplement fait un tour.',
   NULL, '', 'publie', 1, '2026-08-25T10:00:00.000Z',
   'u-admin', '2026-08-25T09:30:00.000Z', 'u-admin', '2026-08-25T10:00:00.000Z'),
