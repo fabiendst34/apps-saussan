@@ -278,6 +278,15 @@ export async function adherer(env, url, user) {
   <h2 id="adhesion">Adhérer en ligne</h2>
   <p class="muet">L'adhésion pour l'année scolaire 2026-2027 se fait via HelloAsso, notre plateforme de paiement sécurisée. Le formulaire ci-dessous est hébergé par HelloAsso&nbsp;: aucune coordonnée bancaire ne transite par ce site.</p>
 
+  <div class="encart encart--astuce">
+    ${icone('tirelire', { taille: 26 })}
+    <div>
+      <h3>Pensez à vérifier le montant avant de valider</h3>
+      <p>HelloAsso ne prélève aucune commission à l'association&nbsp;: la plateforme se finance grâce à une <strong>contribution volontaire</strong>, ajoutée par défaut à votre panier en plus de la cotisation.</p>
+      <p>Ce montant est librement modifiable, y compris à zéro. Si vous souhaitez ne régler que votre adhésion, cliquez sur <strong>«&nbsp;Modifier&nbsp;»</strong> en face de la contribution avant de finaliser le paiement.</p>
+    </div>
+  </div>
+
   <div class="widget-helloasso">
     <iframe id="haWidget"
             title="Formulaire d'adhésion HelloAsso — APPS Saussan"

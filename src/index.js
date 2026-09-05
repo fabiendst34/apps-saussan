@@ -40,7 +40,12 @@ export default {
     // Rien ne doit transiter en clair : un formulaire de connexion servi
     // en HTTP enverrait le mot de passe non chiffre, et le cookie de
     // session serait pose sans l'attribut Secure.
-    if (url.protocol === "http:") {
+    // Seules les requetes reellement passees par le reseau Cloudflare sont
+    // redirigees : en developpement, wrangler sert en clair et reecrit meme
+    // l URL vers le domaine des routes, si bien qu un test sur le nom d hote
+    // ne suffit pas. L en-tete CF-Ray, lui, n existe qu en production.
+    const derriereCloudflare = request.headers.has("cf-ray");
+    if (url.protocol === "http:" && derriereCloudflare) {
       url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
     }

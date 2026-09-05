@@ -533,3 +533,18 @@ table.cal-grille tbody tr:last-child td { border-bottom: 0; }
 }
 .agenda-lien { margin: .5rem 0 0 calc(76px + 1.25rem); font-size: .9rem; }
 @media (max-width: 520px) { .agenda-lien { margin-left: calc(60px + .9rem); } }
+
+/* Avertissement sur la contribution HelloAsso, juste avant le formulaire :
+   il doit se remarquer sans faire peur, d'ou le fond jaune de la maison
+   plutot qu'un ton d'alerte. */
+.encart--astuce {
+  display: grid; grid-template-columns: auto 1fr; gap: 1rem;
+  align-items: start; margin: 1.75rem 0 .5rem;
+  padding: 1.25rem 1.4rem;
+}
+.encart--astuce > .ico { color: var(--jaune-fonce); margin-top: .15rem; }
+.encart--astuce h3 {
+  font-size: 1.05rem; margin: 0 0 .4rem;
+}
+.encart--astuce p { margin: 0 0 .5rem; font-size: .95rem; }
+.encart--astuce p:last-child { margin-bottom: 0; }
