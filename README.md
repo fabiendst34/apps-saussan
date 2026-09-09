@@ -240,6 +240,9 @@ db/
   seed.sql            jeu de démonstration — local uniquement
   reset.sql           suppression de toutes les tables
   migrations/         évolutions du schéma sur une base déjà en service
+docs/
+  guide-membres.py    génère le livret PDF remis au bureau et au CA (reportlab)
+  Guide-membres-APPS.pdf
 public/               feuilles de style, polices, logo, favicon, robots.txt
 ```
 
