@@ -1,0 +1,3 @@
+# Git prend les PDF pour du texte et y convertit les fins de ligne, ce qui
+# corrompt le fichier a la sortie du depot.
+*.pdf binary
