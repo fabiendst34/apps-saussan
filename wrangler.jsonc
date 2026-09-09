@@ -46,7 +46,7 @@
     "CONTACT_EMAIL": "apps.saussan@gmail.com",
     "MAIL_FROM": "no-reply@apps-saussan.fr",
     "MAIL_FROM_NAME": "APPS Saussan",
-    "ALLOW_INDEXING": "false",
+    "ALLOW_INDEXING": "true",
 
     // Iterations PBKDF2 pour le hachage des mots de passe.
     // 50000 ~ 6 ms de CPU : tient dans la limite de 10 ms du plan Workers gratuit.

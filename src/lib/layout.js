@@ -1,6 +1,7 @@
 // Gabarits HTML : squelette de page, en-tetes de navigation, pied de page.
 import { esc, fullName, initials } from './util.js';
 import { icone } from './icones.js';
+import { urlAbsolue as absolu } from './seo.js';
 
 /** Icone inline du logo (evite une requete reseau supplementaire). */
 export const LOGO_SVG = `<svg class="marque__logo" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
@@ -145,6 +146,9 @@ document.addEventListener('submit',function(e){
  * Construit une page complete.
  * @param {object} o
  * @param {string} o.titre        titre de l'onglet (sans le suffixe du site)
+ * @param {string} [o.titreComplet] remplace entierement le titre, suffixe compris
+ * @param {string} [o.canonique]  chemin canonique de la page ; sans lui, pas de balise
+ * @param {string} [o.jsonLd]     balise <script> de donnees structurees
  * @param {string} [o.description] meta description
  * @param {string} o.contenu      HTML du <main>
  * @param {'public'|'espace'|'nu'} [o.variante]
@@ -154,8 +158,16 @@ document.addEventListener('submit',function(e){
  * @param {string} [o.classeMain]
  */
 export function page(o) {
-  const { titre, description = '', contenu, variante = 'public', user = null, chemin = '/', env, classeMain = '' } = o;
-  const indexable = env.ALLOW_INDEXING === 'true';
+  const { titre, titreComplet = '', description = '', contenu, variante = 'public',
+          user = null, chemin = '/', env, classeMain = '', canonique = '', jsonLd = '' } = o;
+
+  // L'espace membres et l'administration ne sont jamais indexables, meme
+  // quand le site public l'est : leurs pages n'ont rien a faire dans un
+  // moteur de recherche, et robots.txt ne suffit pas a les en sortir.
+  const prive = chemin.startsWith('/espace') || chemin.startsWith('/admin');
+  const indexable = env.ALLOW_INDEXING === 'true' && !prive;
+  const titrePage = titreComplet || `${titre} · APPS Saussan`;
+  const adresse = canonique && indexable ? absolu(env, canonique) : '';
   const entete = variante === 'nu' ? '' : entetePublique(chemin, user);
   const barre = variante === 'espace' && user ? barreEspace(chemin, user) : '';
   const basDePage = variante === 'nu' ? '' : pied(env);
@@ -165,9 +177,18 @@ export function page(o) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(titre)} · APPS Saussan</title>
+<title>${esc(titrePage)}</title>
 ${description ? `<meta name="description" content="${esc(description)}">` : ''}
 ${indexable ? '' : '<meta name="robots" content="noindex, nofollow">'}
+${adresse ? `<link rel="canonical" href="${esc(adresse)}">` : ''}
+${adresse ? `<meta property="og:type" content="website">
+<meta property="og:site_name" content="APPS Saussan">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="${esc(adresse)}">
+<meta property="og:title" content="${esc(titrePage)}">${description ? `
+<meta property="og:description" content="${esc(description)}">` : ''}
+<meta property="og:image" content="${esc(absolu(env, '/logo-apps.svg'))}">
+<meta name="twitter:card" content="summary">` : ''}
 <meta name="theme-color" content="#F2A93B">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/polices/nunito-400-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -175,6 +196,7 @@ ${indexable ? '' : '<meta name="robots" content="noindex, nofollow">'}
 <link rel="stylesheet" href="/polices.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/styles-app.css">
+${jsonLd}
 </head>
 <body class="page">
 <a class="saut-contenu" href="#contenu">Aller au contenu</a>

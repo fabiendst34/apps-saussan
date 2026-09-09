@@ -138,6 +138,7 @@ export async function actualites(env, url, user) {
     titre: 'Actualités',
     description: "Les actualités de l'Association des Parents des Pitchouns Saussannais.",
     contenu, user, chemin: '/actualites', env,
+    canonique: pageCourante > 1 ? `/actualites?p=${pageCourante}` : '/actualites',
   }));
 }
 
@@ -185,6 +186,7 @@ ${autres.length ? `<div class="conteneur" style="margin-top:3.5rem">
     titre: a.title,
     description: a.chapo || `${a.title} — actualités de l'APPS Saussan.`,
     contenu, user, chemin: '/actualites', env,
+    canonique: `/actualites/${a.slug}`,
   }));
 }
 

@@ -9,6 +9,7 @@ import * as pub from './routes/public.js';
 import * as auth from './routes/auth.js';
 import * as espace from './routes/espace.js';
 import { peutVoirEvenement } from './lib/instances.js';
+import { reponseSitemap } from './lib/seo.js';
 import * as admin from './routes/admin.js';
 import * as articles from './routes/articles.js';
 import { servirImage } from './lib/medias.js';
@@ -136,6 +137,7 @@ async function routerRequete(request, env, ctx, url) {
           case '/confidentialite':   return pub.confidentialite(env, url, user);
           case '/calendrier.ics':    return pub.calendrierPublicIcs(env);
           case '/actualites.rss':    return articles.actualitesRss(env);
+          case '/sitemap.xml':       return reponseSitemap(env);
         }
       }
       if (methode === 'POST' && chemin === '/contact') return pub.contactPost(env, request, url, user);

@@ -8,6 +8,7 @@ import { logAudit } from '../lib/audit.js';
 import { sendEmail, contactNotificationEmail } from '../lib/email.js';
 import { sectionALaUne } from './articles.js';
 import { calendrierIcs, reponseIcs } from '../lib/flux.js';
+import { jsonLdAssociation } from '../lib/seo.js';
 
 export const CATEGORIES = {
   reunion: 'Réunion',
@@ -141,7 +142,12 @@ ${alaune}
 
   return html(page({
     titre: 'Accueil',
+    // Le titre d'accueil porte la requete que les parents taperont vraiment :
+    // le nom de l'association, sa nature et sa commune.
+    titreComplet: "APPS Saussan — Association de parents d'élèves des écoles de Saussan (34570)",
     description: "Association des Parents des Pitchouns Saussannais : événements, projets et vie des écoles de Saussan (34570).",
+    canonique: '/',
+    jsonLd: jsonLdAssociation(env),
     contenu, user, chemin: '/', env,
   }));
 }
@@ -218,6 +224,7 @@ export async function association(env, url, user) {
   return html(page({
     titre: "L'association",
     description: "Missions, bureau et fonctionnement de l'Association des Parents des Pitchouns Saussannais.",
+    canonique: '/association',
     contenu, user, chemin: '/association', env,
   }));
 }
@@ -259,6 +266,7 @@ export async function evenements(env, url, user) {
   return html(page({
     titre: 'Événements',
     description: 'Agenda des événements de l’APPS : kermesse, marché de Noël, carnaval et rendez-vous des écoles de Saussan.',
+    canonique: '/evenements',
     contenu, user, chemin: '/evenements', env,
   }));
 }
@@ -331,6 +339,7 @@ export async function adherer(env, url, user) {
   return html(page({
     titre: 'Nous rejoindre',
     description: "Comment adhérer à l'APPS et participer à la vie des écoles de Saussan.",
+    canonique: '/adherer',
     contenu, user, chemin: '/adherer', env,
   }));
 }
@@ -394,6 +403,7 @@ export function contact(env, url, user, erreurs = null, valeurs = {}) {
   return html(page({
     titre: 'Contact',
     description: "Contacter l'Association des Parents des Pitchouns Saussannais.",
+    canonique: '/contact',
     contenu, user, chemin: '/contact', env,
   }));
 }
@@ -455,7 +465,7 @@ export function mentionsLegales(env, url, user) {
   <h2>Photographies</h2>
   <p>Aucune photographie d'enfant n'est publiée sans l'accord écrit préalable des représentants légaux. Pour demander le retrait d'un contenu, écrivez à <a href="mailto:${esc(env.CONTACT_EMAIL)}">${esc(env.CONTACT_EMAIL)}</a>.</p>
 </div></section>`;
-  return html(page({ titre: 'Mentions légales', contenu, user, chemin: '/mentions-legales', env }));
+  return html(page({ titre: 'Mentions légales', contenu, user, chemin: '/mentions-legales', env, canonique: '/mentions-legales' }));
 }
 
 export function confidentialite(env, url, user) {
@@ -485,7 +495,7 @@ export function confidentialite(env, url, user) {
   <h2>Vos droits</h2>
   <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement et d'opposition sur vos données. Pour l'exercer, écrivez à <a href="mailto:${esc(env.CONTACT_EMAIL)}">${esc(env.CONTACT_EMAIL)}</a>. Vous pouvez également introduire une réclamation auprès de la CNIL.</p>
 </div></section>`;
-  return html(page({ titre: 'Confidentialité', contenu, user, chemin: '/confidentialite', env }));
+  return html(page({ titre: 'Confidentialité', contenu, user, chemin: '/confidentialite', env, canonique: '/confidentialite' }));
 }
 
 export function page404(env, url, user) {
