@@ -26,6 +26,7 @@ const TRACES = {
   guirlande: '<path d="M3 5.5c3.4 3.4 6.6 5 9 5s5.6-1.6 9-5"/><path d="m7.4 8.4-1.6 4.4a1.9 1.9 0 0 0 3.6 1.3l1.6-4.4M14.6 9.7l1.6 4.4a1.9 1.9 0 0 0 3.6-1.3l-1.6-4.4"/><path d="M12 10.5v9"/>',
   tirelire: '<path d="M20.5 12.6a6 6 0 0 0-4.3-5.4H9.6a6 6 0 0 0-4.4 4.2l-1.7 1v3.1l1.9.6a6 6 0 0 0 1.7 1.8v2.1h3v-1.3h4v1.3h3v-2.4a6 6 0 0 0 1.9-3.2l1.5-.5v-1.3Z"/><path d="M9.6 7.2A3.2 3.2 0 0 1 15 4.9M8.2 12.6v.1"/>',
   cartable: '<rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5"/><path d="M9.6 13.4a1.9 1.9 0 0 1 2.4-.6M14.4 13.4v.1"/>',
+  epingle: '<path d="M9.2 3.5h5.6l-.8 5.6 3.5 3.2v1.6H6.5v-1.6l3.5-3.2Z"/><path d="M12 13.9v6.6"/>',
   recherche: '<circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.5 15.5 4.5 4.5"/>',
   menu: '<path d="M4 7.5h16M4 12h16M4 16.5h16"/>',
   coche_simple: '<path d="m4.5 12.5 4.8 4.8L19.5 6.7"/>',
@@ -60,5 +61,6 @@ export const ICONE_CATEGORIE = {
   vente: 'tirelire',
   fete: 'guirlande',
   sortie: 'lieu',
+  date_cle: 'epingle',
   autre: 'calendrier',
 };

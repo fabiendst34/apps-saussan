@@ -249,8 +249,37 @@ a.carte:hover { transform: translateY(-3px); box-shadow: var(--ombre-md); border
 .cat-vente   { --cat: #7A5AA8; --cat-pale: #F0EAF8; }
 .cat-fete    { --cat: #9C4F10; --cat-pale: #FCEDDF; }
 .cat-sortie  { --cat: #1B6B7A; --cat-pale: #E2F1F4; }
+.cat-date_cle{ --cat: #A03050; --cat-pale: #FBE9EE; }
 .cat-autre   { --cat: #6B6257; --cat-pale: #F0EDE8; }
 .etiquette-cat { background: var(--cat-pale); color: var(--cat); }
+
+/* Instances : bureau et comite d administration.
+   Meme grammaire que les etiquettes de categorie, teintes distinctes
+   pour qu on distingue d un coup d oeil « pour qui » d un « quoi ». */
+.etiquette--bureau { background: #EDE7F6; color: #5B3E9B; }
+.etiquette--ca     { background: #E4EFF6; color: #285E82; }
+
+/* Selection multiple : une liste de cases a cocher plutot qu un
+   <select multiple>, illisible des que la liste depasse trois noms et
+   impraticable au doigt sur mobile. */
+.choix-multiple {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: .15rem .75rem; max-height: 15rem; overflow-y: auto;
+  padding: .7rem .85rem; border: 1px solid var(--bord); border-radius: var(--r-md);
+  background: var(--blanc);
+}
+.choix-multiple .case { font-weight: 600; font-size: .95rem; padding: .3rem 0; }
+.choix-multiple .case input { margin-top: .15rem; }
+.choix-multiple__vide { color: var(--gris); font-size: .95rem; margin: 0; }
+
+/* Equipe pilote affichee sur la fiche d un evenement. */
+.equipe { display: flex; flex-wrap: wrap; gap: .4rem; margin: .25rem 0 0; padding: 0; list-style: none; }
+.equipe li {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: var(--creme); border: 1px solid var(--bord); border-radius: 999px;
+  padding: .2rem .7rem .2rem .25rem; font-size: .9rem; font-weight: 700;
+}
+.equipe .jeton { width: 24px; height: 24px; font-size: .68rem; }
 
 /* --- Messages ----------------------------------------------------- */
 

@@ -182,6 +182,21 @@ Les sessions et jetons expirés sont supprimés automatiquement, environ une
 requête sur cinquante, après l'envoi de la réponse. Sans cela les deux tables
 grossiraient indéfiniment.
 
+### Migrations
+
+`schema.sql` crée les tables manquantes mais ne touche pas à celles qui
+existent déjà : une base en service ne gagnera donc jamais une colonne par ce
+biais. Les évolutions du schéma vivent dans `db/migrations/`, numérotées, et
+s'appliquent une seule fois, d'abord en local puis en production :
+
+```bash
+npx wrangler d1 execute apps-saussan --local --file=./db/migrations/002-instances-et-leaders.sql
+```
+
+```bash
+npx wrangler d1 execute apps-saussan --remote --file=./db/migrations/002-instances-et-leaders.sql
+```
+
 Pour exporter la base hors de Cloudflare :
 
 ```bash
@@ -208,6 +223,7 @@ src/
     medias.js         stockage des images (voir « Images » ci-dessous)
     icones.js         jeu d'icônes SVG maison
     flux.js           calendrier iCalendar et flux RSS
+    instances.js      bureau, comité d'administration, audience des événements
     entetes.js        en-têtes de sécurité et entretien de la base
     layout.js         squelette HTML, navigations, pied de page
   routes/
@@ -223,14 +239,36 @@ db/
   schema.sql          schéma D1 (idempotent)
   seed.sql            jeu de démonstration — local uniquement
   reset.sql           suppression de toutes les tables
+  migrations/         évolutions du schéma sur une base déjà en service
 public/               feuilles de style, polices, logo, favicon, robots.txt
 ```
+
+### Instances, audience et équipes
+
+Chaque compte appartient à un cercle : simple **membre**, **comité
+d'administration** ou **bureau**. Ces cercles sont emboîtés — un membre du
+bureau siège aussi au CA, l'inverse n'est pas vrai — et la hiérarchie tient
+dans `src/lib/instances.js`, pas dans la base.
+
+Un événement porte symétriquement une **audience** : tous les membres, le CA,
+ou le bureau. Un événement réservé à une instance n'est pas seulement étiqueté,
+il **disparaît** du calendrier, des listes, de la fiche et du formulaire
+d'édition des membres qui n'y siègent pas. Deux exceptions : un événement
+publié sur le site public reste visible de tous, et l'administrateur technique
+voit tout, pour pouvoir dépanner n'importe quelle fiche.
+
+Le formulaire ne propose à son auteur que les audiences qu'il pourra lui-même
+relire : on ne peut pas créer un événement aussitôt invisible pour soi.
+
+Chaque événement peut aussi désigner une **équipe de leaders** — les membres
+qui en portent l'organisation — et prendre la catégorie « date importante »,
+réservée aux échéances à noter : ni horaire, ni lieu, juste une date.
 
 ### Sécurité
 
 - Mots de passe hachés en PBKDF2-SHA256 avec sel aléatoire ; jamais stockés en clair.
 - Sessions opaques : le cookie ne contient qu'un jeton aléatoire, son empreinte SHA-256
-  sert de clé en base. Cookie `HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS.
+  sert de clé en base. Cookie `HttpOnly`, `SameSite=Lax`, et `Secure` dès que la requête passe par Cloudflare.
 - Double protection CSRF : contrôle de l'en-tête `Origin` sur tous les POST, plus un jeton
   par session sur les formulaires authentifiés.
 - Limitation des tentatives : blocage au-delà de 8 échecs par IP ou par e-mail sur 15 minutes.

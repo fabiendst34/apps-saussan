@@ -3,6 +3,7 @@ import { esc, richText, html, redirect, uuid, nowIso, field, isEmail, clientIp,
          formatDateLong, formatRange, parseDate, todayKey, MOIS_COURTS } from '../lib/util.js';
 import { page, messagesFlash, bandeau, LOGO_SVG } from '../lib/layout.js';
 import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
+import { badgeAudience } from '../lib/instances.js';
 import { logAudit } from '../lib/audit.js';
 import { sendEmail, contactNotificationEmail } from '../lib/email.js';
 import { sectionALaUne } from './articles.js';
@@ -14,6 +15,7 @@ export const CATEGORIES = {
   vente: 'Vente / collecte',
   fete: 'Fête',
   sortie: 'Sortie',
+  date_cle: 'Date importante',
   autre: 'Autre',
 };
 
@@ -39,6 +41,7 @@ export function carteEvenement(ev, href, passe = false) {
         ${ev.location ? `<span>${icone('lieu', { taille: 16 })}${esc(ev.location)}</span>` : ''}
         <span class="etiquette etiquette-cat">${icone(ICONE_CATEGORIE[ev.category] || 'calendrier', { taille: 14 })}${esc(categorieLabel(ev.category))}</span>
         ${ev.is_public ? '' : `<span class="etiquette etiquette--gris">${icone('cadenas', { taille: 14 })}Interne</span>`}
+        ${ev.is_public ? '' : badgeAudience(ev.audience)}
       </div>
       ${ev.description ? `<p class="evenement__desc">${esc(String(ev.description).slice(0, 190))}${String(ev.description).length > 190 ? '…' : ''}</p>` : ''}
     </div>

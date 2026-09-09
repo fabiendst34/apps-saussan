@@ -10,9 +10,14 @@ import { logAudit, diff, ACTION_LABELS, actionTone, FIELD_LABELS } from '../lib/
 import { issueToken, destroyUserSessions, checkCsrf } from '../lib/auth.js';
 import { sendEmail, activationEmail, resetEmail } from '../lib/email.js';
 import { csrfInput, ligneAudit } from './espace.js';
+import { INSTANCES, INSTANCES_COURT, ROLES, STATUTS, instanceLabel, normaliserInstance } from '../lib/instances.js';
 
-const ROLES = { membre: 'Membre', admin: 'Administrateur' };
-const STATUTS = { invite: 'Invité', actif: 'Actif', suspendu: 'Suspendu' };
+/** Etiquette d'appartenance. Un simple membre n'en porte pas : c'est le cas par defaut. */
+function badgeInstance(i, court = false) {
+  if (i !== 'ca' && i !== 'bureau') return '';
+  const texte = court ? INSTANCES_COURT[i] : instanceLabel(i);
+  return `<span class="etiquette etiquette--${i}">${esc(texte)}</span>`;
+}
 
 function badgeStatut(s) {
   const classes = { invite: 'etiquette--bleu', actif: 'etiquette--vert', suspendu: 'etiquette--rouge' };
@@ -128,6 +133,7 @@ export async function listeComptes(env, url, user) {
         </div>
       </td>
       <td class="serre">${u.title ? esc(u.title) : '<span class="muet">—</span>'}</td>
+      <td class="serre">${badgeInstance(u.instance, true) || '<span class="muet">—</span>'}</td>
       <td class="serre">${u.role === 'admin'
         ? '<span class="etiquette etiquette--noir">Administrateur</span>'
         : '<span class="etiquette etiquette--gris">Membre</span>'}</td>
@@ -159,7 +165,7 @@ export async function listeComptes(env, url, user) {
   </div>
 
   ${lignes ? `<div class="tableau-enveloppe"><table>
-      <thead><tr><th>Membre</th><th>Fonction</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
+      <thead><tr><th>Membre</th><th>Fonction</th><th>Instance</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
       <tbody>${lignes}</tbody></table></div>`
     : `<div class="vide">${icone('personnes', { taille: 34, classe: 'vide__icone' })}<h3>Aucun compte</h3>
        <p>${q || statut ? 'Aucun résultat pour ce filtre.' : 'Créez le premier compte membre.'}</p></div>`}
@@ -212,6 +218,15 @@ export function formulaireCompte(env, url, user, session, cible = null, erreur =
           <label class="champ__label" for="phone">Téléphone</label>
           <input type="tel" id="phone" name="phone" maxlength="25" value="${v('phone')}">
         </div>
+      </div>
+
+      <div class="champ">
+        <label class="champ__label" for="instance">Instance</label>
+        <select id="instance" aria-describedby="aide-instance" name="instance">
+          ${Object.entries(INSTANCES).map(([k, l]) =>
+            `<option value="${k}"${(cible?.instance || 'membre') === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}
+        </select>
+        <p class="champ__aide" id="aide-instance">Les membres du bureau siègent aussi au comité d'administration&nbsp;: choisir «&nbsp;Bureau&nbsp;» leur donne accès aux événements des deux instances.</p>
       </div>
 
       <div class="duo">
@@ -284,6 +299,7 @@ export async function ficheCompte(env, url, user, session, id) {
     </div>
     <div class="pousse rang">
       ${badgeStatut(cible.status)}
+      ${badgeInstance(cible.instance)}
       ${cible.role === 'admin' ? '<span class="etiquette etiquette--noir">Administrateur</span>' : ''}
     </div>
   </div>
@@ -291,6 +307,7 @@ export async function ficheCompte(env, url, user, session, id) {
   <div class="carte" style="margin-bottom:1.5rem">
     <ul class="detail-liste">
       <li><span class="cle">Fonction</span><span>${cible.title ? esc(cible.title) : '<span class="muet">non renseignée</span>'}</span></li>
+      <li><span class="cle">Instance</span><span>${badgeInstance(cible.instance) || '<span class="muet">simple membre</span>'}</span></li>
       <li><span class="cle">Téléphone</span><span>${cible.phone ? esc(cible.phone) : '<span class="muet">non renseigné</span>'}</span></li>
       <li><span class="cle">Créé le</span><span>${esc(formatDateTime(cible.created_at))}</span></li>
       <li><span class="cle">Dernière connexion</span><span>${cible.last_login_at ? esc(formatDateTime(cible.last_login_at)) : '<span class="muet">jamais connecté</span>'}</span></li>
@@ -371,6 +388,7 @@ export async function creerComptePost(env, request, url, user, session) {
     first_name: field(form, 'first_name', 60),
     last_name: field(form, 'last_name', 60),
     title: field(form, 'title', 60),
+    instance: normaliserInstance(field(form, 'instance', 10)),
     phone: field(form, 'phone', 25),
     role: ROLES[field(form, 'role', 10)] ? field(form, 'role', 10) : 'membre',
   };
@@ -384,19 +402,19 @@ export async function creerComptePost(env, request, url, user, session) {
   const id = uuid();
   const maintenant = nowIso();
   await env.DB.prepare(
-    `INSERT INTO users (id, email, first_name, last_name, title, phone, role, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'invite', ?, ?)`
-  ).bind(id, data.email, data.first_name, data.last_name, data.title, data.phone, data.role, maintenant, maintenant).run();
+    `INSERT INTO users (id, email, first_name, last_name, title, phone, instance, role, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'invite', ?, ?)`
+  ).bind(id, data.email, data.first_name, data.last_name, data.title, data.phone, data.instance, data.role, maintenant, maintenant).run();
 
   await logAudit(env, request, {
     actor: user, action: 'user.create', entityType: 'user', entityId: id, entityLabel: data.email,
-    changes: diff({}, data, ['email', 'first_name', 'last_name', 'role']),
+    changes: diff({}, data, ['email', 'first_name', 'last_name', 'instance', 'role']),
   });
 
-  let flash = 'compte-cree';
+  let flash = 'compte-cree-sans-envoi';
   if (envoyer) {
     const envoi = await envoyerInvitation(env, request, user, { id, ...data });
-    if (!envoi.ok) flash = 'compte-cree-sans-mail';
+    flash = envoi.ok ? 'compte-cree' : 'compte-cree-sans-mail';
   }
 
   return redirect(`/admin/comptes/${id}?ok=${flash}`);
@@ -414,6 +432,7 @@ export async function modifierComptePost(env, request, url, user, session, id) {
     first_name: field(form, 'first_name', 60),
     last_name: field(form, 'last_name', 60),
     title: field(form, 'title', 60),
+    instance: normaliserInstance(field(form, 'instance', 10)),
     phone: field(form, 'phone', 25),
     role: ROLES[field(form, 'role', 10)] ? field(form, 'role', 10) : 'membre',
     status: STATUTS[field(form, 'status', 10)] ? field(form, 'status', 10) : avant.status,
@@ -431,14 +450,14 @@ export async function modifierComptePost(env, request, url, user, session, id) {
   }
 
   await env.DB.prepare(
-    `UPDATE users SET email = ?, first_name = ?, last_name = ?, title = ?, phone = ?, role = ?, status = ?, updated_at = ?
+    `UPDATE users SET email = ?, first_name = ?, last_name = ?, title = ?, phone = ?, instance = ?, role = ?, status = ?, updated_at = ?
       WHERE id = ?`
-  ).bind(data.email, data.first_name, data.last_name, data.title, data.phone, data.role, data.status, nowIso(), id).run();
+  ).bind(data.email, data.first_name, data.last_name, data.title, data.phone, data.instance, data.role, data.status, nowIso(), id).run();
 
   // Une suspension ferme immediatement les sessions ouvertes.
   if (data.status !== 'actif' && avant.status === 'actif') await destroyUserSessions(env, id);
 
-  const changements = diff(avant, data, ['email', 'first_name', 'last_name', 'title', 'phone', 'role', 'status']);
+  const changements = diff(avant, data, ['email', 'first_name', 'last_name', 'title', 'phone', 'instance', 'role', 'status']);
   if (changements) {
     await logAudit(env, request, {
       actor: user, action: 'user.update', entityType: 'user', entityId: id,

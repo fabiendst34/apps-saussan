@@ -219,6 +219,7 @@ export const FLASH = {
   'article-restaure': "L'article a été restauré.",
   'article-annonce': "L'article est publié et les membres viennent d'en être informés par e-mail.",
   'compte-cree': 'Le compte a été créé et l’e-mail d’activation envoyé.',
+  'compte-cree-sans-envoi': 'Le compte a été créé. Aucun e-mail d’activation n’a encore été envoyé.',
   'compte-cree-sans-mail': "Le compte a été créé, mais l'e-mail d'activation n'a pas pu être envoyé. Utilisez le bouton « Renvoyer l’invitation ».",
   'compte-modifie': 'Le compte a été mis à jour.',
   'compte-supprime': 'Le compte a été supprimé.',

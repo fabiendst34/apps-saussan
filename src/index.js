@@ -8,6 +8,7 @@ import { page } from './lib/layout.js';
 import * as pub from './routes/public.js';
 import * as auth from './routes/auth.js';
 import * as espace from './routes/espace.js';
+import { peutVoirEvenement } from './lib/instances.js';
 import * as admin from './routes/admin.js';
 import * as articles from './routes/articles.js';
 import { servirImage } from './lib/medias.js';
@@ -195,7 +196,11 @@ async function routerRequete(request, env, ctx, url) {
         if (suite === 'modifier') {
           if (methode === 'POST') return espace.modifierEvenementPost(env, request, url, user, session, id);
           const ev = await env.DB.prepare('SELECT * FROM events WHERE id = ? AND deleted_at IS NULL').bind(id).first();
-          return ev ? espace.formulaireEvenement(env, url, user, session, ev) : pub.page404(env, url, user);
+          // Un evenement hors de l'audience du membre n'existe pas pour lui,
+          // y compris via l'URL d'edition.
+          return ev && peutVoirEvenement(user, ev)
+            ? espace.formulaireEvenement(env, url, user, session, ev)
+            : pub.page404(env, url, user);
         }
         if (suite === 'supprimer' && methode === 'POST') return espace.supprimerEvenementPost(env, request, url, user, session, id);
         if (suite === 'restaurer' && methode === 'POST') return espace.restaurerEvenementPost(env, request, url, user, session, id);

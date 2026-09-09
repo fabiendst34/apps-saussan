@@ -63,8 +63,12 @@ export function passwordProblem(password) {
 
 // --- Sessions --------------------------------------------------------
 
-function cookieHeader(value, maxAge, url) {
-  const secure = url.protocol === 'https:' ? ' Secure;' : '';
+// En developpement, wrangler reecrit l URL vers le domaine des routes : le
+// protocole y est https alors que le serveur local repond en clair, et un
+// cookie Secure serait alors purement et simplement jete par le navigateur.
+// L en-tete CF-Ray, lui, n existe qu en production.
+function cookieHeader(value, maxAge, request) {
+  const secure = request.headers.has('cf-ray') ? ' Secure;' : '';
   return `${COOKIE_NAME}=${value}; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=${maxAge}`;
 }
 
@@ -87,7 +91,7 @@ export async function createSession(env, request, url, userId) {
   ).bind(id, userId, csrf, nowIso(), isoPlus(SESSION_TTL), clientIp(request), userAgent(request)).run();
 
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').bind(nowIso(), userId).run();
-  return { 'set-cookie': cookieHeader(token, SESSION_TTL, url) };
+  return { 'set-cookie': cookieHeader(token, SESSION_TTL, request) };
 }
 
 export async function destroySession(env, request, url) {
@@ -95,7 +99,7 @@ export async function destroySession(env, request, url) {
   if (token) {
     await env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(await sha256(token)).run();
   }
-  return { 'set-cookie': cookieHeader('', 0, url) };
+  return { 'set-cookie': cookieHeader('', 0, request) };
 }
 
 /** Supprime toutes les sessions d'un compte (suspension, suppression, changement de mot de passe). */

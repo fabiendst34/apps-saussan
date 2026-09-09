@@ -96,6 +96,7 @@ export const FIELD_LABELS = {
   title: 'Titre', description: 'Description', location: 'Lieu', category: 'Catégorie',
   start_date: 'Date de début', start_time: 'Heure de début', end_date: 'Date de fin',
   end_time: 'Heure de fin', all_day: 'Journée entière', is_public: 'Visible publiquement',
+  audience: 'Destinataires', leaders: 'Équipe de leaders', instance: 'Instance',
   email: 'E-mail', first_name: 'Prénom', last_name: 'Nom', role: 'Rôle',
   status: 'Statut', phone: 'Téléphone', password_hash: 'Mot de passe', title_fn: 'Fonction',
   chapo: 'Résumé', body: 'Texte', image_id: 'Image', image_alt: "Description de l'image",

@@ -9,9 +9,56 @@ import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
 import { logAudit, diff, ACTION_LABELS, actionTone, FIELD_LABELS } from '../lib/audit.js';
 import { hashPassword, verifyPassword, passwordProblem, destroyUserSessions, checkCsrf } from '../lib/auth.js';
 import { CATEGORIES, categorieLabel, carteEvenement } from './public.js';
+import {
+  AUDIENCES, INSTANCES, ROLES, STATUTS, audienceLabel, audiencesVisibles,
+  badgeAudience, filtreAudience, peutVoirEvenement,
+} from '../lib/instances.js';
 
-const CHAMPS_AUDITES = ['title', 'description', 'location', 'category',
-  'start_date', 'start_time', 'end_date', 'end_time', 'all_day', 'is_public'];
+const CHAMPS_AUDITES = ['title', 'description', 'location', 'category', 'audience',
+  'start_date', 'start_time', 'end_date', 'end_time', 'all_day', 'is_public', 'leaders'];
+
+// ---------------------------------------------------------------------
+//  Equipe de leaders
+// ---------------------------------------------------------------------
+
+/** Comptes proposables comme leaders : tous sauf les comptes suspendus. */
+async function membresSelectionnables(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, first_name, last_name, email, instance FROM users
+      WHERE status <> 'suspendu' ORDER BY last_name, first_name, email`
+  ).all();
+  return results || [];
+}
+
+/** Equipe d'un evenement, fiches completes et triees. */
+async function equipeDe(env, eventId) {
+  const { results } = await env.DB.prepare(
+    `SELECT u.id, u.first_name, u.last_name, u.email
+       FROM event_leaders l JOIN users u ON u.id = l.user_id
+      WHERE l.event_id = ? ORDER BY u.last_name, u.first_name, u.email`
+  ).bind(eventId).all();
+  return results || [];
+}
+
+/** Liste de noms lisible, telle qu'elle sera figee dans le journal d'audit. */
+function libelleEquipe(membres) {
+  return membres.map((m) => fullName(m) || m.email).join(', ');
+}
+
+/**
+ * Remplace l'equipe d'un evenement et renvoie son libelle.
+ * Les identifiants recus du formulaire sont recroises avec la liste des
+ * comptes selectionnables : un id forge n'entre jamais en base.
+ */
+async function enregistrerEquipe(env, eventId, ids, membres) {
+  const retenus = membres.filter((m) => ids.includes(m.id));
+  const ops = [env.DB.prepare('DELETE FROM event_leaders WHERE event_id = ?').bind(eventId)];
+  for (const m of retenus) {
+    ops.push(env.DB.prepare('INSERT INTO event_leaders (event_id, user_id) VALUES (?, ?)').bind(eventId, m.id));
+  }
+  await env.DB.batch(ops);
+  return libelleEquipe(retenus);
+}
 
 /** Champ cache portant le jeton anti-CSRF de la session. */
 export function csrfInput(session) {
@@ -63,11 +110,15 @@ export async function calendrier(env, url, user, session) {
   const debut = cases[0].cle;
   const fin = cases[cases.length - 1].cle;
 
+  // Un evenement reserve au bureau ne doit pas seulement etre etiquete : il
+  // disparait du calendrier des membres qui n'y siegent pas.
+  const filtre = filtreAudience(user);
   const { results } = await env.DB.prepare(
     `SELECT * FROM events
       WHERE deleted_at IS NULL AND end_date >= ? AND start_date <= ?
+        ${filtre.sql ? `AND ${filtre.sql}` : ''}
       ORDER BY start_date, all_day DESC, start_time`
-  ).bind(debut, fin).all();
+  ).bind(debut, fin, ...filtre.params).all();
   const parJour = indexerParJour(results || []);
 
   const precedent = new Date(annee, mois - 1, 1);
@@ -78,8 +129,9 @@ export async function calendrier(env, url, user, session) {
   const puce = (ev) => {
     const heure = ev.all_day ? '' : `${esc(String(ev.start_time || '').slice(0, 5))} `;
     const verrou = ev.is_public ? '' : icone('cadenas', { taille: 11 });
+    const pour = ev.audience && ev.audience !== 'tous' ? ` — ${audienceLabel(ev.audience)}` : '';
     return `<a class="cal-puce cat-${esc(ev.category)}${ev.is_public ? '' : ' cal-puce--prive'}"
-      href="/espace/evenements/${esc(ev.id)}" title="${esc(ev.title)}">${verrou}<span>${heure}${esc(ev.title)}</span></a>`;
+      href="/espace/evenements/${esc(ev.id)}" title="${esc(ev.title + pour)}">${verrou}<span>${heure}${esc(ev.title)}</span></a>`;
   };
 
   // Un vrai tableau : les lecteurs d'ecran annoncent alors le jour de la
@@ -160,12 +212,30 @@ export async function listeEvenements(env, url, user) {
   if (filtre === 'passes') { where = 'deleted_at IS NULL AND end_date < ?'; ordre = 'start_date DESC'; }
   if (filtre === 'supprimes') { where = 'deleted_at IS NOT NULL'; ordre = 'deleted_at DESC'; params = []; }
 
+  const portee = filtreAudience(user);
+  if (portee.sql) { where += ` AND ${portee.sql}`; params = params.concat(portee.params); }
+
   const sql = `SELECT e.*, c.first_name AS c_prenom, c.last_name AS c_nom, c.email AS c_email
                  FROM events e LEFT JOIN users c ON c.id = e.created_by
                 WHERE ${where} ORDER BY ${ordre} LIMIT 300`;
   const { results } = await (params.length
     ? env.DB.prepare(sql).bind(...params).all()
     : env.DB.prepare(sql).all());
+
+  // Une seule requete pour toutes les equipes : la table de liaison reste
+  // minuscule, la parcourir entierement coute moins qu'une requete par ligne.
+  const equipes = new Map();
+  if (results && results.length) {
+    const { results: liens } = await env.DB.prepare(
+      `SELECT l.event_id, u.first_name, u.last_name, u.email
+         FROM event_leaders l JOIN users u ON u.id = l.user_id
+        ORDER BY u.last_name, u.first_name, u.email`
+    ).all();
+    for (const l of liens || []) {
+      if (!equipes.has(l.event_id)) equipes.set(l.event_id, []);
+      equipes.get(l.event_id).push(fullName(l) || l.email);
+    }
+  }
 
   const onglet = (cle, label) =>
     `<a class="btn btn--petit ${filtre === cle ? 'btn--principal' : 'btn--fantome'}" href="/espace/evenements?f=${cle}">${label}</a>`;
@@ -176,12 +246,14 @@ export async function listeEvenements(env, url, user) {
         <a href="/espace/evenements/${esc(e.id)}" style="font-weight:800;color:var(--noir);text-decoration:none">${esc(e.title)}</a>
         ${e.deleted_at ? '<span class="etiquette etiquette--rouge" style="margin-left:.4rem">Supprimé</span>' : ''}
         ${e.location ? `<div class="petit muet ligne-ico">${icone('lieu', { taille: 14 })}${esc(e.location)}</div>` : ''}
+        ${equipes.has(e.id) ? `<div class="petit muet ligne-ico">${icone('personnes', { taille: 14 })}${esc(equipes.get(e.id).join(', '))}</div>` : ''}
       </td>
       <td class="serre">${esc(formatDateShort(e.start_date))}${e.all_day ? '' : `<div class="petit muet">${esc(String(e.start_time || '').slice(0, 5))}</div>`}</td>
       <td class="serre"><span class="etiquette etiquette-cat cat-${esc(e.category)}">${esc(categorieLabel(e.category))}</span></td>
       <td class="serre">${e.is_public
         ? '<span class="etiquette etiquette--vert">Public</span>'
-        : '<span class="etiquette etiquette--gris">Interne</span>'}</td>
+        : '<span class="etiquette etiquette--gris">Interne</span>'}
+        ${badgeAudience(e.audience)}</td>
       <td class="serre petit muet">${esc(e.c_prenom ? `${e.c_prenom} ${e.c_nom}`.trim() : (e.c_email || 'compte supprimé'))}</td>
       <td class="serre">
         <div class="actions-ligne">
@@ -226,7 +298,10 @@ export async function detailEvenement(env, url, user, session, id) {
       WHERE e.id = ?`
   ).bind(id).first();
 
-  if (!ev) return null;
+  // Meme regle qu'au calendrier : l'URL directe ne contourne pas l'audience.
+  if (!ev || !peutVoirEvenement(user, ev)) return null;
+
+  const equipe = await equipeDe(env, id);
 
   const { results: journal } = await env.DB.prepare(
     `SELECT * FROM audit_log WHERE entity_type = 'event' AND entity_id = ? ORDER BY created_at DESC LIMIT 30`
@@ -272,6 +347,13 @@ export async function detailEvenement(env, url, user, session, id) {
       <li><span class="cle">Visibilité</span><span>${ev.is_public
         ? '<span class="etiquette etiquette--vert">Public</span> — affiché sur le site'
         : '<span class="etiquette etiquette--gris">Interne</span> — visible uniquement ici'}</span></li>
+      <li><span class="cle">Destinataires</span><span>${esc(audienceLabel(ev.audience))}${ev.audience && ev.audience !== 'tous'
+        ? ' <span class="petit muet">— les autres membres ne le voient pas dans leur calendrier</span>' : ''}</span></li>
+      <li><span class="cle">Équipe de leaders</span><span>${equipe.length
+        ? `<ul class="equipe">${equipe.map((m) => `<li><span class="jeton" aria-hidden="true">${
+            esc(((m.first_name?.[0] || m.email[0]) + (m.last_name?.[0] || '')).toUpperCase())
+          }</span>${esc(fullName(m) || m.email)}</li>`).join('')}</ul>`
+        : '<span class="muet">personne pour l’instant</span>'}</span></li>
       <li><span class="cle">Créé par</span><span>${esc(auteur(ev.c_prenom, ev.c_nom, ev.c_email))} · ${esc(formatDateTime(ev.created_at))}</span></li>
       <li><span class="cle">Modifié par</span><span>${ev.updated_at !== ev.created_at
         ? `${esc(auteur(ev.m_prenom, ev.m_nom, ev.m_email))} · ${esc(formatDateTime(ev.updated_at))}`
@@ -290,6 +372,29 @@ export async function detailEvenement(env, url, user, session, id) {
   return html(page({ titre: ev.title, contenu, user, chemin: '/espace/evenements', env, variante: 'espace' }));
 }
 
+/**
+ * Le journal est lu par des benevoles, pas par des developpeurs : les valeurs
+ * stockees en base y sont retraduites en francais courant.
+ *
+ * Les tables sont construites a l'appel et non une fois pour toutes : espace.js
+ * et public.js s'importent mutuellement (via articles.js), et une constante
+ * lue au chargement du module tomberait sur un CATEGORIES encore vide.
+ */
+function libelleValeur(champ, v) {
+  const ouiNon = { 0: 'non', 1: 'oui' };
+  const tables = {
+    category: CATEGORIES,
+    audience: AUDIENCES,
+    instance: INSTANCES,
+    role: ROLES,
+    status: { ...STATUTS, brouillon: 'Brouillon', publie: 'Publié' },
+    all_day: ouiNon,
+    is_public: ouiNon,
+    is_featured: ouiNon,
+  };
+  return tables[champ]?.[v] ?? v;
+}
+
 /** Rend une entree du journal d'audit (reutilise dans l'espace et l'admin). */
 export function ligneAudit(e) {
   let changements = '';
@@ -299,7 +404,9 @@ export function ligneAudit(e) {
       changements = `<div class="diff">${Object.entries(obj).map(([champ, [avant, apres]]) => {
         const nom = FIELD_LABELS[champ] || champ;
         if (champ === 'password_hash') return `<div><span class="diff__champ">${esc(nom)}</span> : <span class="diff__apres">modifié</span></div>`;
-        const fmt = (v) => v === null || v === '' ? '<span class="muet">vide</span>' : esc(String(v).slice(0, 90));
+        const fmt = (v) => v === null || v === ''
+          ? '<span class="muet">vide</span>'
+          : esc(String(libelleValeur(champ, v)).slice(0, 90));
         return `<div><span class="diff__champ">${esc(nom)}</span> :
           <span class="diff__avant">${fmt(avant)}</span><span class="diff__fleche">→</span><span class="diff__apres">${fmt(apres)}</span></div>`;
       }).join('')}</div>`;
@@ -321,11 +428,20 @@ export function ligneAudit(e) {
 //  Formulaire de creation / modification
 // =====================================================================
 
-export function formulaireEvenement(env, url, user, session, ev = null, erreur = null) {
-  const modification = !!ev;
+export async function formulaireEvenement(env, url, user, session, ev = null, erreur = null) {
+  const modification = !!ev?.id;
   const v = (k, def = '') => esc(ev?.[k] ?? def);
   const action = modification ? `/espace/evenements/${ev.id}/modifier` : '/espace/evenements/nouveau';
   const demain = toDateKey(new Date(Date.now() + 86400000));
+
+  const membres = await membresSelectionnables(env);
+  // Apres une erreur de saisie, la selection vient du formulaire renvoye ;
+  // sinon elle vient de la base.
+  const choisis = new Set(ev?.leaders_ids || (modification ? (await equipeDe(env, ev.id)).map((m) => m.id) : []));
+
+  // On ne propose que les audiences que l'auteur pourra lui-meme relire :
+  // creer un evenement aussitot invisible pour son auteur n'a pas de sens.
+  const audiencesOffertes = audiencesVisibles(user);
 
   const contenu = `
 <section class="section" style="padding-top:2rem"><div class="conteneur conteneur--etroit">
@@ -348,21 +464,31 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
       <div class="duo">
         <div class="champ">
           <label class="champ__label" for="category">Catégorie</label>
-          <select id="category" name="category">
+          <select id="category" aria-describedby="aide-category" name="category">
             ${Object.entries(CATEGORIES).map(([k, label]) =>
               `<option value="${k}"${(ev?.category || 'ecole') === k ? ' selected' : ''}>${esc(label)}</option>`).join('')}
           </select>
+          <p class="champ__aide" id="aide-category">«&nbsp;Date importante&nbsp;»&nbsp;: une échéance à noter, sans horaire ni lieu.</p>
         </div>
-        <div class="champ">
+        <div class="champ" id="bloc-lieu">
           <label class="champ__label" for="location">Lieu</label>
           <input type="text" id="location" name="location" maxlength="150" value="${v('location')}"
                  placeholder="Ex. : Cour de l'école élémentaire">
         </div>
       </div>
 
+      <div class="champ">
+        <label class="champ__label" for="audience">Destinataires</label>
+        <select id="audience" aria-describedby="aide-audience" name="audience">
+          ${audiencesOffertes.map((k) =>
+            `<option value="${k}"${(ev?.audience || 'tous') === k ? ' selected' : ''}>${esc(AUDIENCES[k])}</option>`).join('')}
+        </select>
+        <p class="champ__aide" id="aide-audience">Un événement réservé au bureau ou au comité d'administration n'apparaît que dans le calendrier de ses membres. Un événement publié sur le site reste, lui, visible de tous.</p>
+      </div>
+
       <fieldset>
         <legend>Quand ?</legend>
-        <div class="champ">
+        <div class="champ" id="bloc-journee">
           <label class="case">
             <input type="checkbox" name="all_day" value="1" id="all_day"${ev?.all_day ? ' checked' : ''}>
             <span>Journée entière (sans horaire précis)</span>
@@ -391,6 +517,17 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Équipe de leaders</legend>
+        <p class="champ__aide" style="margin:-.35rem 0 .8rem">Les membres qui portent l'organisation de cet événement. Plusieurs choix possibles.</p>
+        ${membres.length ? `<div class="choix-multiple">${membres.map((m) => `
+          <label class="case">
+            <input type="checkbox" name="leaders" value="${esc(m.id)}"${choisis.has(m.id) ? ' checked' : ''}>
+            <span>${esc(fullName(m) || m.email)}</span>
+          </label>`).join('')}</div>`
+        : '<p class="choix-multiple__vide">Aucun compte membre n’est encore actif.</p>'}
+      </fieldset>
+
       <div class="champ">
         <label class="champ__label" for="description">Description</label>
         <textarea id="description" name="description" maxlength="4000" rows="6"
@@ -414,10 +551,23 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
 </div></section>
 <script>
 (function(){
-  var c=document.getElementById('all_day');
-  if(!c)return;
-  function sync(){ document.querySelectorAll('[data-horaire]').forEach(function(el){ el.style.display=c.checked?'none':''; }); }
-  c.addEventListener('change',sync); sync();
+  var jour=document.getElementById('all_day');
+  var cat=document.getElementById('category');
+  var lieu=document.getElementById('bloc-lieu');
+  var blocJour=document.getElementById('bloc-journee');
+  function sync(){
+    // Une « date importante » n'a ni horaire ni lieu : les champs
+    // correspondants disparaissent, le serveur les ignore de toute facon.
+    var dateCle = cat && cat.value === 'date_cle';
+    if(dateCle && jour) jour.checked = true;
+    if(lieu) lieu.hidden = dateCle;
+    if(blocJour) blocJour.hidden = dateCle;
+    var sansHeure = dateCle || (jour && jour.checked);
+    document.querySelectorAll('[data-horaire]').forEach(function(el){ el.hidden = sansHeure; });
+  }
+  if(jour) jour.addEventListener('change',sync);
+  if(cat) cat.addEventListener('change',sync);
+  sync();
 })();
 </script>`;
 
@@ -427,23 +577,39 @@ export function formulaireEvenement(env, url, user, session, ev = null, erreur =
   }));
 }
 
-/** Extrait et valide les champs d'un evenement. */
-function lireEvenement(form) {
-  const allDay = form.get('all_day') === '1';
+/**
+ * Extrait et valide les champs d'un evenement.
+ * @param {FormData} form
+ * @param {object} user auteur, pour brider l'audience a ce qu'il peut relire
+ */
+function lireEvenement(form, user) {
+  const brute = field(form, 'category', 20);
+  const category = CATEGORIES[brute] ? brute : 'autre';
+
+  // Une date importante n'est pas un rendez-vous : ni horaire, ni lieu.
+  const dateCle = category === 'date_cle';
+  const allDay = dateCle || form.get('all_day') === '1';
+
   const start_date = field(form, 'start_date', 10);
   let end_date = field(form, 'end_date', 10) || start_date;
   const start_time = allDay ? null : (field(form, 'start_time', 5) || null);
   const end_time = allDay ? null : (field(form, 'end_time', 5) || null);
 
+  const permises = audiencesVisibles(user);
+  const voulue = field(form, 'audience', 10);
+  const audience = permises.includes(voulue) ? voulue : 'tous';
+
   const data = {
     title: field(form, 'title', 120),
     description: field(form, 'description', 4000),
-    location: field(form, 'location', 150),
-    category: CATEGORIES[field(form, 'category', 20)] ? field(form, 'category', 20) : 'autre',
+    location: dateCle ? '' : field(form, 'location', 150),
+    category,
+    audience,
     start_date, start_time, end_date, end_time,
     all_day: allDay ? 1 : 0,
     is_public: form.get('is_public') === '1' ? 1 : 0,
   };
+  const leaders = form.getAll('leaders').map(String).slice(0, 50);
 
   if (!data.title) return { erreur: "Le titre de l'événement est obligatoire." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date)) return { erreur: 'La date de début est obligatoire.' };
@@ -452,28 +618,35 @@ function lireEvenement(form) {
   if (!allDay && start_time && end_time && start_date === end_date && end_time < start_time) {
     return { erreur: "L'heure de fin ne peut pas précéder l'heure de début." };
   }
-  return { data };
+  return { data, leaders };
+}
+
+/** Reconstruit l'etat saisi pour reafficher le formulaire apres une erreur. */
+function saisie(form, base = {}) {
+  return { ...base, ...Object.fromEntries(form), leaders_ids: form.getAll('leaders').map(String) };
 }
 
 export async function creerEvenementPost(env, request, url, user, session) {
   const form = await request.formData();
   if (!checkCsrf(session, form)) return redirect('/espace/evenements/nouveau?err=csrf');
 
-  const { data, erreur } = lireEvenement(form);
-  if (erreur) return formulaireEvenement(env, url, user, session, Object.fromEntries(form), erreur);
+  const { data, leaders, erreur } = lireEvenement(form, user);
+  if (erreur) return formulaireEvenement(env, url, user, session, saisie(form), erreur);
 
   const id = uuid();
   const maintenant = nowIso();
   await env.DB.prepare(
-    `INSERT INTO events (id, title, description, location, category, start_date, start_time,
+    `INSERT INTO events (id, title, description, location, category, audience, start_date, start_time,
                          end_date, end_time, all_day, is_public, created_by, created_at, updated_by, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, data.title, data.description, data.location, data.category, data.start_date, data.start_time,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, data.title, data.description, data.location, data.category, data.audience, data.start_date, data.start_time,
     data.end_date, data.end_time, data.all_day, data.is_public, user.id, maintenant, user.id, maintenant).run();
+
+  const equipe = await enregistrerEquipe(env, id, leaders, await membresSelectionnables(env));
 
   await logAudit(env, request, {
     actor: user, action: 'event.create', entityType: 'event', entityId: id, entityLabel: data.title,
-    changes: diff({}, data, CHAMPS_AUDITES),
+    changes: diff({}, { ...data, leaders: equipe }, CHAMPS_AUDITES),
   });
 
   return redirect(`/espace/evenements/${id}?ok=event-cree`);
@@ -484,19 +657,24 @@ export async function modifierEvenementPost(env, request, url, user, session, id
   if (!checkCsrf(session, form)) return redirect(`/espace/evenements/${id}/modifier?err=csrf`);
 
   const avant = await env.DB.prepare('SELECT * FROM events WHERE id = ? AND deleted_at IS NULL').bind(id).first();
-  if (!avant) return redirect('/espace/evenements?err=introuvable');
+  if (!avant || !peutVoirEvenement(user, avant)) return redirect('/espace/evenements?err=introuvable');
 
-  const { data, erreur } = lireEvenement(form);
-  if (erreur) return formulaireEvenement(env, url, user, session, { ...avant, ...Object.fromEntries(form) }, erreur);
+  const { data, leaders, erreur } = lireEvenement(form, user);
+  if (erreur) return formulaireEvenement(env, url, user, session, saisie(form, avant), erreur);
 
   await env.DB.prepare(
-    `UPDATE events SET title = ?, description = ?, location = ?, category = ?, start_date = ?, start_time = ?,
+    `UPDATE events SET title = ?, description = ?, location = ?, category = ?, audience = ?, start_date = ?, start_time = ?,
                        end_date = ?, end_time = ?, all_day = ?, is_public = ?, updated_by = ?, updated_at = ?
       WHERE id = ?`
-  ).bind(data.title, data.description, data.location, data.category, data.start_date, data.start_time,
+  ).bind(data.title, data.description, data.location, data.category, data.audience, data.start_date, data.start_time,
     data.end_date, data.end_time, data.all_day, data.is_public, user.id, nowIso(), id).run();
 
-  const changements = diff(avant, data, CHAMPS_AUDITES);
+  // L'equipe se compare avant / apres comme n'importe quel autre champ : le
+  // journal doit dire qui a ete ajoute ou retire, pas seulement « modifie ».
+  const equipeAvant = libelleEquipe(await equipeDe(env, id));
+  const equipeApres = await enregistrerEquipe(env, id, leaders, await membresSelectionnables(env));
+
+  const changements = diff({ ...avant, leaders: equipeAvant }, { ...data, leaders: equipeApres }, CHAMPS_AUDITES);
   if (changements) {
     await logAudit(env, request, {
       actor: user, action: 'event.update', entityType: 'event', entityId: id,
@@ -512,7 +690,7 @@ export async function supprimerEvenementPost(env, request, url, user, session, i
   if (!checkCsrf(session, form)) return redirect(`/espace/evenements/${id}?err=csrf`);
 
   const ev = await env.DB.prepare('SELECT * FROM events WHERE id = ? AND deleted_at IS NULL').bind(id).first();
-  if (!ev) return redirect('/espace/evenements?err=introuvable');
+  if (!ev || !peutVoirEvenement(user, ev)) return redirect('/espace/evenements?err=introuvable');
 
   await env.DB.prepare('UPDATE events SET deleted_at = ?, deleted_by = ? WHERE id = ?')
     .bind(nowIso(), user.id, id).run();
@@ -530,7 +708,7 @@ export async function restaurerEvenementPost(env, request, url, user, session, i
   if (!checkCsrf(session, form)) return redirect(`/espace/evenements/${id}?err=csrf`);
 
   const ev = await env.DB.prepare('SELECT * FROM events WHERE id = ? AND deleted_at IS NOT NULL').bind(id).first();
-  if (!ev) return redirect('/espace/evenements?err=introuvable');
+  if (!ev || !peutVoirEvenement(user, ev)) return redirect('/espace/evenements?err=introuvable');
 
   await env.DB.prepare('UPDATE events SET deleted_at = NULL, deleted_by = NULL, updated_by = ?, updated_at = ? WHERE id = ?')
     .bind(user.id, nowIso(), id).run();

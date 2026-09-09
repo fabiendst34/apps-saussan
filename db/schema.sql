@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_name      TEXT NOT NULL DEFAULT '',
   role           TEXT NOT NULL DEFAULT 'membre' CHECK (role IN ('membre','admin')),
   status         TEXT NOT NULL DEFAULT 'invite' CHECK (status IN ('invite','actif','suspendu')),
+  -- Cercle d'appartenance : le bureau fait partie du CA, pas l'inverse.
+  instance       TEXT NOT NULL DEFAULT 'membre' CHECK (instance IN ('membre','ca','bureau')),
   title          TEXT NOT NULL DEFAULT '',     -- fonction dans le bureau (President, Tresorier...)
   phone          TEXT NOT NULL DEFAULT '',
   created_at     TEXT NOT NULL,
@@ -60,7 +62,11 @@ CREATE TABLE IF NOT EXISTS events (
   description  TEXT NOT NULL DEFAULT '',
   location     TEXT NOT NULL DEFAULT '',
   category     TEXT NOT NULL DEFAULT 'autre'
-                 CHECK (category IN ('reunion','ecole','vente','fete','sortie','autre')),
+                 CHECK (category IN ('reunion','ecole','vente','fete','sortie','date_cle','autre')),
+  -- Qui est concerne dans l'espace membres. Un evenement public reste
+  -- visible de tous, quelle que soit cette valeur.
+  audience     TEXT NOT NULL DEFAULT 'tous'
+                 CHECK (audience IN ('tous','ca','bureau')),
   start_date   TEXT NOT NULL,                  -- AAAA-MM-JJ
   start_time   TEXT,                           -- HH:MM ou NULL si journee entiere
   end_date     TEXT NOT NULL,
@@ -77,6 +83,17 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_start ON events(start_date);
 CREATE INDEX IF NOT EXISTS idx_events_public ON events(is_public, start_date);
 CREATE INDEX IF NOT EXISTS idx_events_deleted ON events(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_events_audience ON events(audience, start_date);
+
+-- ---------------------------------------------------------------------
+--  Equipe pilote d'un evenement : les membres qui en portent la charge.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS event_leaders (
+  event_id  TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (event_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_leaders_user ON event_leaders(user_id);
 
 -- ---------------------------------------------------------------------
 --  Journal d'audit
