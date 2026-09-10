@@ -51,6 +51,50 @@ export function isoPlus(seconds) {
 }
 
 // --- Dates -----------------------------------------------------------
+//
+// Les horodatages sont stockes en UTC, ce qui est la seule facon sensee de les
+// comparer. Mais un Worker s'execute lui aussi en UTC : afficher `getHours()`
+// revenait donc a montrer l'heure de Greenwich a des parents de l'Herault, avec
+// une ou deux heures de retard selon la saison. Tout ce qui est lu par un etre
+// humain passe desormais par Intl et le fuseau de Paris.
+
+export const FUSEAU = 'Europe/Paris';
+
+/**
+ * Formateurs Intl, construits a la demande puis conserves : les fabriquer
+ * coute plus cher que de les reutiliser, et le budget CPU d'une requete est
+ * de dix millisecondes.
+ */
+const formateurs = new Map();
+function formateur(cle, options) {
+  let f = formateurs.get(cle);
+  if (!f) {
+    f = new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU, ...options });
+    formateurs.set(cle, f);
+  }
+  return f;
+}
+
+/** Decompose une date dans le fuseau de Paris : { year, month, day, hour, minute }. */
+function partiesParis(date, options) {
+  const cle = Object.keys(options).join(',');
+  const parts = {};
+  for (const p of formateur(cle, options).formatToParts(date)) parts[p.type] = p.value;
+  return parts;
+}
+
+const JOUR_PARIS = { year: 'numeric', month: '2-digit', day: '2-digit' };
+const HORODATAGE_PARIS = { ...JOUR_PARIS, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+
+/**
+ * Jour courant a Paris, au format 'AAAA-MM-JJ'.
+ * @param {number} [decalageJours] 1 pour demain, -1 pour hier.
+ */
+export function jourParis(decalageJours = 0) {
+  const d = new Date(Date.now() + decalageJours * 86400000);
+  const p = partiesParis(d, JOUR_PARIS);
+  return `${p.year}-${p.month}-${p.day}`;
+}
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -79,8 +123,13 @@ export function toDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Aujourd'hui, tel que le voit quelqu'un a Saussan. Entre minuit et deux
+ * heures du matin, le serveur est encore la veille : sans cette correction, un
+ * evenement du jour basculait dans les « passes » avec deux heures d'avance.
+ */
 export function todayKey() {
-  return toDateKey(new Date());
+  return jourParis();
 }
 
 /**
@@ -100,12 +149,19 @@ export function formatDateShort(iso) {
   return `${d.getDate()} ${MOIS_COURTS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/** Horodatage d'audit : '14/09/2026 à 18:32' */
-export function formatDateTime(iso) {
+/**
+ * Horodatage lisible, a l'heure de Paris : '14/09/2026 à 18:32'.
+ * @param {string} iso date UTC telle qu'elle est stockee
+ * @param {object} [o]
+ * @param {boolean} [o.avecA] false pour '14/09/2026 18:32', qu'un tableur sait
+ *   reconnaitre comme une date et donc trier.
+ */
+export function formatDateTime(iso, { avecA = true } = {}) {
   if (!iso) return '—';
   const d = new Date(iso);
-  const p = (n) => String(n).padStart(2, '0');
-  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} à ${p(d.getHours())}:${p(d.getMinutes())}`;
+  if (Number.isNaN(d.getTime())) return '—';
+  const p = partiesParis(d, HORODATAGE_PARIS);
+  return `${p.day}/${p.month}/${p.year}${avecA ? ' à' : ''} ${p.hour}:${p.minute}`;
 }
 
 /** Resume lisible d'un creneau : « Sam. 4 oct. 2026, 14:00 → 18:00 ». */

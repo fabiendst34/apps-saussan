@@ -1,7 +1,7 @@
 // Espace membres : calendrier partage, gestion des evenements, compte personnel.
 import {
   esc, richText, html, redirect, uuid, nowIso, field,
-  parseDate, toDateKey, todayKey, formatDateShort, formatDateTime,
+  parseDate, toDateKey, todayKey, jourParis, formatDateShort, formatDateTime,
   formatRange, fullName, MOIS_NOMS, JOURS_COURTS, JOURS_LONGS,
 } from '../lib/util.js';
 import { page, messagesFlash, bandeau } from '../lib/layout.js';
@@ -395,23 +395,48 @@ function libelleValeur(champ, v) {
   return tables[champ]?.[v] ?? v;
 }
 
+/**
+ * Rend le detail des modifications d'une entree d'audit.
+ * Partage par la fiche d'un objet et par le journal de l'administration :
+ * deux rendus separes finissaient par diverger, et l'un des deux affichait
+ * encore « date_cle » la ou l'autre disait « Date importante ».
+ * @param {string} changes JSON stocke en base
+ * @param {object} [o]
+ * @param {number} [o.max] nombre de champs affiches
+ * @param {number} [o.taille] longueur maximale d'une valeur
+ */
+export function blocDifferences(changes, { max = Infinity, taille = 90 } = {}) {
+  if (!changes) return '';
+  try {
+    const entrees = Object.entries(JSON.parse(changes)).slice(0, max);
+    return `<div class="diff">${entrees.map(([champ, [avant, apres]]) => {
+      const nom = FIELD_LABELS[champ] || champ;
+      if (champ === 'password_hash') return `<div><span class="diff__champ">${esc(nom)}</span> : <span class="diff__apres">modifié</span></div>`;
+      const fmt = (v) => v === null || v === ''
+        ? '<span class="muet">vide</span>'
+        : esc(String(libelleValeur(champ, v)).slice(0, taille));
+      return `<div><span class="diff__champ">${esc(nom)}</span> :
+        <span class="diff__avant">${fmt(avant)}</span><span class="diff__fleche">→</span><span class="diff__apres">${fmt(apres)}</span></div>`;
+    }).join('')}</div>`;
+  } catch { return ''; }
+}
+
+/** Meme contenu en texte brut, pour l'export CSV du journal. */
+export function texteDifferences(changes) {
+  if (!changes) return '';
+  try {
+    return Object.entries(JSON.parse(changes)).map(([champ, [avant, apres]]) => {
+      const nom = FIELD_LABELS[champ] || champ;
+      if (champ === 'password_hash') return `${nom} : modifié`;
+      const fmt = (v) => v === null || v === '' ? '(vide)' : String(libelleValeur(champ, v));
+      return `${nom} : ${fmt(avant)} → ${fmt(apres)}`;
+    }).join(' ; ');
+  } catch { return ''; }
+}
+
 /** Rend une entree du journal d'audit (reutilise dans l'espace et l'admin). */
 export function ligneAudit(e) {
-  let changements = '';
-  if (e.changes) {
-    try {
-      const obj = JSON.parse(e.changes);
-      changements = `<div class="diff">${Object.entries(obj).map(([champ, [avant, apres]]) => {
-        const nom = FIELD_LABELS[champ] || champ;
-        if (champ === 'password_hash') return `<div><span class="diff__champ">${esc(nom)}</span> : <span class="diff__apres">modifié</span></div>`;
-        const fmt = (v) => v === null || v === ''
-          ? '<span class="muet">vide</span>'
-          : esc(String(libelleValeur(champ, v)).slice(0, 90));
-        return `<div><span class="diff__champ">${esc(nom)}</span> :
-          <span class="diff__avant">${fmt(avant)}</span><span class="diff__fleche">→</span><span class="diff__apres">${fmt(apres)}</span></div>`;
-      }).join('')}</div>`;
-    } catch { changements = ''; }
-  }
+  const changements = blocDifferences(e.changes);
   return `<div class="audit-ligne" style="padding:.7rem 0">
     <div class="rang" style="gap:.4rem">
       <span class="point point--${actionTone(e.action)}"></span>
@@ -432,7 +457,7 @@ export async function formulaireEvenement(env, url, user, session, ev = null, er
   const modification = !!ev?.id;
   const v = (k, def = '') => esc(ev?.[k] ?? def);
   const action = modification ? `/espace/evenements/${ev.id}/modifier` : '/espace/evenements/nouveau';
-  const demain = toDateKey(new Date(Date.now() + 86400000));
+  const demain = jourParis(1);
 
   const membres = await membresSelectionnables(env);
   // Apres une erreur de saisie, la selection vient du formulaire renvoye ;

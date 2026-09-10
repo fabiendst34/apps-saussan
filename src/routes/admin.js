@@ -6,10 +6,10 @@ import {
 } from '../lib/util.js';
 import { page, messagesFlash, bandeau } from '../lib/layout.js';
 import { icone } from '../lib/icones.js';
-import { logAudit, diff, ACTION_LABELS, actionTone, FIELD_LABELS } from '../lib/audit.js';
+import { logAudit, diff, ACTION_LABELS, actionTone } from '../lib/audit.js';
 import { issueToken, destroyUserSessions, checkCsrf } from '../lib/auth.js';
 import { sendEmail, activationEmail, resetEmail } from '../lib/email.js';
-import { csrfInput, ligneAudit } from './espace.js';
+import { csrfInput, ligneAudit, blocDifferences, texteDifferences } from './espace.js';
 import { INSTANCES, INSTANCES_COURT, ROLES, STATUTS, instanceLabel, normaliserInstance } from '../lib/instances.js';
 
 /** Etiquette d'appartenance. Un simple membre n'en porte pas : c'est le cas par defaut. */
@@ -562,8 +562,9 @@ export async function journalAudit(env, url, user) {
     const echapCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const entetes = ['Date', 'Auteur', 'E-mail', 'Action', 'Type', 'Identifiant', 'Libellé', 'Modifications', 'IP'];
     const lignes = (results || []).map((e) => [
-      e.created_at, e.actor_name, e.actor_email, ACTION_LABELS[e.action] || e.action,
-      e.entity_type, e.entity_id, e.entity_label, e.changes, e.ip,
+      formatDateTime(e.created_at, { avecA: false }), e.actor_name, e.actor_email,
+      ACTION_LABELS[e.action] || e.action,
+      e.entity_type, e.entity_id, e.entity_label, texteDifferences(e.changes), e.ip,
     ].map(echapCsv).join(';'));
     // BOM UTF-8 pour qu'Excel ouvre correctement les accents.
     const csv = '﻿' + [entetes.join(';'), ...lignes].join('\r\n');
@@ -598,7 +599,7 @@ export async function journalAudit(env, url, user) {
           <strong>${esc(ACTION_LABELS[e.action] || e.action)}</strong>
         </div>
         ${e.entity_label ? `<div class="petit muet">${esc(e.entity_label)}</div>` : ''}
-        ${blocChangements(e.changes)}
+        ${blocDifferences(e.changes, { max: 6, taille: 60 })}
       </td>
       <td class="serre">
         ${esc(e.actor_name || '—')}
@@ -663,20 +664,6 @@ export async function journalAudit(env, url, user) {
 </div></section>`;
 
   return html(page({ titre: "Journal d'audit", contenu, user, chemin: '/admin/journal', env, variante: 'espace' }));
-}
-
-function blocChangements(changes) {
-  if (!changes) return '';
-  try {
-    const obj = JSON.parse(changes);
-    return `<div class="diff">${Object.entries(obj).slice(0, 6).map(([champ, [avant, apres]]) => {
-      const nom = FIELD_LABELS[champ] || champ;
-      if (champ === 'password_hash') return `<div><span class="diff__champ">${esc(nom)}</span> : <span class="diff__apres">modifié</span></div>`;
-      const fmt = (v) => v === null || v === '' ? '<span class="muet">vide</span>' : esc(String(v).slice(0, 60));
-      return `<div><span class="diff__champ">${esc(nom)}</span> :
-        <span class="diff__avant">${fmt(avant)}</span><span class="diff__fleche">→</span><span class="diff__apres">${fmt(apres)}</span></div>`;
-    }).join('')}</div>`;
-  } catch { return ''; }
 }
 
 // =====================================================================

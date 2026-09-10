@@ -1,5 +1,5 @@
 // Gabarits HTML : squelette de page, en-tetes de navigation, pied de page.
-import { esc, fullName, initials } from './util.js';
+import { esc, fullName, initials, todayKey } from './util.js';
 import { icone } from './icones.js';
 import { urlAbsolue as absolu } from './seo.js';
 
@@ -89,7 +89,7 @@ function barreEspace(chemin, user) {
 }
 
 function pied(env) {
-  const annee = new Date().getFullYear();
+  const annee = todayKey().slice(0, 4);
   return `<footer class="pied"><div class="conteneur">
     <div class="pied__grille">
       <div>
