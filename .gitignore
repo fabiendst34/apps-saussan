@@ -7,6 +7,3 @@ dist/
 *.log
 .DS_Store
 sauvegardes/
-
-# Les illustrations sont regenerables : seul le script fait foi.
-docs/illustrations/*.jpg
