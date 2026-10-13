@@ -124,6 +124,9 @@ export function reponseIcs(contenu, nomFichier) {
     headers: {
       'content-type': 'text/calendar; charset=utf-8',
       'content-disposition': `inline; filename="${nomFichier}"`,
+      // Un fichier d'agenda n'a ni titre, ni description, ni H1 : un moteur
+      // qui l'indexe ne peut produire qu'un resultat vide. On le lui dit.
+      'x-robots-tag': 'noindex',
       // Les agendas rechargent l'abonnement regulierement : une heure suffit.
       'cache-control': 'public, max-age=3600',
     },
@@ -165,6 +168,9 @@ export function reponseRss(contenu) {
     headers: {
       'content-type': 'application/rss+xml; charset=utf-8',
       'cache-control': 'public, max-age=1800',
+      // Le flux double la page Actualités : c'est elle qui doit sortir dans
+      // les resultats, pas le XML.
+      'x-robots-tag': 'noindex',
     },
   });
 }

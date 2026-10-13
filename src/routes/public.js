@@ -144,7 +144,8 @@ ${alaune}
     titre: 'Accueil',
     // Le titre d'accueil porte la requete que les parents taperont vraiment :
     // le nom de l'association, sa nature et sa commune.
-    titreComplet: "APPS Saussan — Association de parents d'élèves des écoles de Saussan (34570)",
+    // 54 caracteres : au-dela de 65, Google coupe la fin du titre.
+    titreComplet: "APPS Saussan — Association de parents d'élèves (34570)",
     description: "Association des Parents des Pitchouns Saussannais : événements, projets et vie des écoles de Saussan (34570).",
     canonique: '/',
     jsonLd: jsonLdAssociation(env),
@@ -465,7 +466,11 @@ export function mentionsLegales(env, url, user) {
   <h2>Photographies</h2>
   <p>Aucune photographie d'enfant n'est publiée sans l'accord écrit préalable des représentants légaux. Pour demander le retrait d'un contenu, écrivez à <a href="mailto:${esc(env.CONTACT_EMAIL)}">${esc(env.CONTACT_EMAIL)}</a>.</p>
 </div></section>`;
-  return html(page({ titre: 'Mentions légales', contenu, user, chemin: '/mentions-legales', env, canonique: '/mentions-legales' }));
+  return html(page({
+    titre: 'Mentions légales',
+    description: "Éditeur, hébergeur et propriété intellectuelle du site de l'APPS Saussan.",
+    contenu, user, chemin: '/mentions-legales', env, canonique: '/mentions-legales',
+  }));
 }
 
 export function confidentialite(env, url, user) {
@@ -482,8 +487,17 @@ export function confidentialite(env, url, user) {
     <li><strong>Journal d'activité</strong>&nbsp;: pour chaque action réalisée dans l'espace membres, l'association conserve l'auteur, la date, l'action et l'adresse IP, à des fins de traçabilité et de sécurité.</li>
   </ul>
 
-  <h2>Cookies</h2>
-  <p>Le site dépose un unique cookie technique, <code>apps_session</code>, lorsque vous vous connectez à l'espace membres. Il permet de maintenir votre session et expire au bout de 30 jours. Aucun cookie publicitaire ni outil de mesure d'audience tiers n'est utilisé.</p>
+  <h2 id="cookies">Cookies et mesure d'audience</h2>
+  <p>Le site dépose un unique cookie technique, <code>apps_session</code>, lorsque vous vous connectez à l'espace membres. Il permet de maintenir votre session et expire au bout de 30 jours. Aucun cookie publicitaire n'est utilisé.</p>
+  <p>Sur les <strong>pages publiques uniquement</strong>, et <strong>seulement si vous l'acceptez</strong>, l'association utilise Google Analytics pour mesurer la fréquentation du site&nbsp;: nombre de visites, pages consultées, provenance des visiteurs et type d'appareil. Tant que vous n'avez pas accepté, aucun script de Google n'est chargé et aucun cookie de mesure n'est déposé.</p>
+  <p><strong>L'espace membres et l'administration ne sont jamais mesurés</strong>&nbsp;: le script n'y est pas chargé, et ce que fait un parent connecté ne sort pas du site.</p>
+  <ul>
+    <li>Cookies <code>_ga</code> et <code>_ga_LPEJ099J18</code> (Google Analytics)&nbsp;: distinguent les visites de façon pseudonyme, conservés 13 mois au maximum.</li>
+    <li>Données de visite dans Google Analytics&nbsp;: conservées 2 mois.</li>
+    <li>Votre choix&nbsp;: enregistré dans votre navigateur, sans cookie, et la question vous est reposée au bout de 6 mois.</li>
+  </ul>
+  <p>Google Analytics est fourni par Google Ireland Limited et ne conserve pas votre adresse IP. Certaines données peuvent être traitées aux États-Unis par Google LLC, certifiée au cadre de protection des données UE–États-Unis reconnu par la Commission européenne.</p>
+  <p>Vous pouvez accepter ou refuser, et revenir sur votre choix à tout moment avec le lien «&nbsp;Cookies&nbsp;» en bas de chaque page. Refuser ne vous prive d'aucune fonctionnalité du site.</p>
 
   <h2>Durée de conservation</h2>
   <ul>
@@ -495,7 +509,11 @@ export function confidentialite(env, url, user) {
   <h2>Vos droits</h2>
   <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement et d'opposition sur vos données. Pour l'exercer, écrivez à <a href="mailto:${esc(env.CONTACT_EMAIL)}">${esc(env.CONTACT_EMAIL)}</a>. Vous pouvez également introduire une réclamation auprès de la CNIL.</p>
 </div></section>`;
-  return html(page({ titre: 'Confidentialité', contenu, user, chemin: '/confidentialite', env, canonique: '/confidentialite' }));
+  return html(page({
+    titre: 'Confidentialité',
+    description: "Données collectées par le site de l'APPS Saussan, durée de conservation et exercice de vos droits.",
+    contenu, user, chemin: '/confidentialite', env, canonique: '/confidentialite',
+  }));
 }
 
 export function page404(env, url, user) {

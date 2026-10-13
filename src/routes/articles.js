@@ -367,15 +367,17 @@ export function formulaireArticle(env, url, user, session, a = null, erreur = nu
 
       <div class="champ">
         <label class="champ__label" for="title">Titre <span class="champ__requis">*</span></label>
-        <input type="text" id="title" name="title" required maxlength="140" value="${v('title')}" autofocus
+        <input type="text" id="title" aria-describedby="aide-title" name="title" required maxlength="140"
+               value="${v('title')}" autofocus
                placeholder="Ex. : Le marché de Noël a rapporté 1 200 €">
+        <p class="champ__aide" id="aide-title">Google coupe les titres au-delà d'une soixantaine de caractères&nbsp;: visez court et concret.</p>
       </div>
 
       <div class="champ">
         <label class="champ__label" for="chapo">Résumé</label>
         <textarea id="chapo" aria-describedby="aide-chapo" name="chapo" maxlength="300" rows="2"
                   placeholder="Une ou deux phrases qui donnent envie de lire la suite.">${v('chapo')}</textarea>
-        <p class="champ__aide" id="aide-chapo">Affiché sur la page d'accueil et dans la liste des actualités.</p>
+        <p class="champ__aide" id="aide-chapo">Affiché sur la page d'accueil, dans la liste des actualités et sous le titre dans Google, qui le tronque au-delà de 160 caractères.</p>
       </div>
 
       <fieldset>

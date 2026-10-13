@@ -250,8 +250,11 @@ export function slugifier(texte) {
     .toLowerCase()
     .replace(/['’]/g, ' ')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 70) || 'article';
+    // La coupe a 70 caracteres doit preceder le rognage des tirets : dans
+    // l'autre sens elle pouvait retomber sur un separateur et laisser une
+    // adresse finissant par « - ».
+    .slice(0, 70)
+    .replace(/^-+|-+$/g, '') || 'article';
 }
 
 /**

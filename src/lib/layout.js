@@ -88,7 +88,7 @@ function barreEspace(chemin, user) {
   </div></div>`;
 }
 
-function pied(env) {
+function pied(env, mesure) {
   const annee = todayKey().slice(0, 4);
   return `<footer class="pied"><div class="conteneur">
     <div class="pied__grille">
@@ -117,7 +117,7 @@ function pied(env) {
     </div>
     <div class="pied__bas">
       <span>© ${annee} APPS — Association loi 1901</span>
-      <span><a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Confidentialité</a></span>
+      <span><a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Confidentialité</a>${mesure ? ' · <button type="button" class="pied__cookies" data-gerer-cookies>Cookies</button>' : ''}</span>
     </div>
   </div></footer>`;
 }
@@ -170,7 +170,7 @@ export function page(o) {
   const adresse = canonique && indexable ? absolu(env, canonique) : '';
   const entete = variante === 'nu' ? '' : entetePublique(chemin, user);
   const barre = variante === 'espace' && user ? barreEspace(chemin, user) : '';
-  const basDePage = variante === 'nu' ? '' : pied(env);
+  const basDePage = variante === 'nu' ? '' : pied(env, !prive);
 
   return `<!doctype html>
 <html lang="fr">
@@ -204,6 +204,7 @@ ${entete}${barre}
 <main id="contenu"${classeMain ? ` class="${classeMain}"` : ''}>${contenu}</main>
 ${basDePage}
 ${SCRIPT_MENU}
+${prive ? '' : '<script src="/consentement.js" defer></script>'}
 </body>
 </html>`;
 }

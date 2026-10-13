@@ -16,13 +16,15 @@ import { randomToken, nowIso } from './util.js';
 export function politiqueSecurite(nonce) {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    // googletagmanager : la mesure d'audience, chargee seulement apres accord
+    // du visiteur (public/consentement.js). Jamais dans l'espace membres.
+    `script-src 'self' 'nonce-${nonce}' https://*.googletagmanager.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
-    "img-src 'self' data:",
+    "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
     // Le formulaire d'adhesion est servi par HelloAsso dans une iframe.
     'frame-src https://www.helloasso.com https://helloasso.com',
-    "connect-src 'self'",
+    "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

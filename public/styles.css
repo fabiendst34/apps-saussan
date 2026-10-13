@@ -412,3 +412,42 @@ table, .tuile__valeur, .cal-numero, .pastille-date, .pagination { font-variant-n
 .lien-fleche:hover .ico { transform: translateX(3px); }
 
 .lien-retour { display: inline-flex; align-items: center; gap: .3rem; }
+
+/* ------------------------------------------- Consentement a la mesure d'audience
+   Carte en bas d'ecran plutot qu'un voile qui bloque la page : on peut lire le
+   site sans repondre. Les deux boutons sont identiques — la CNIL exige que
+   refuser soit aussi simple et aussi visible qu'accepter. */
+.consentement {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(820px, calc(100% - 2rem));
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--blanc);
+  border: 2px solid var(--bord-fort);
+  border-radius: var(--r-md, 14px);
+  box-shadow: 0 16px 40px rgba(29, 27, 25, 0.22);
+}
+.consentement[hidden] { display: none; }
+
+@media (min-width: 720px) {
+  .consentement { grid-template-columns: 1fr auto; align-items: center; }
+}
+
+.consentement__texte { margin: 0; font-size: .9rem; color: var(--gris); }
+.consentement__texte strong { color: var(--encre); }
+
+.consentement__actions { display: flex; gap: .6rem; }
+.consentement__actions .btn { flex: 1; white-space: nowrap; }
+
+/* Le lien « Cookies » du pied ouvre le bandeau : c'est un bouton, il doit se
+   lire comme les liens legaux qui l'entourent. */
+.pied__cookies {
+  padding: 0; border: 0; background: none; font: inherit;
+  color: inherit; text-decoration: underline; cursor: pointer;
+}
+.pied__cookies:hover { color: var(--jaune); }
