@@ -1,0 +1,53 @@
+# Déploiement automatique : chaque push sur main est mis en ligne sur Cloudflare.
+#
+# Secret requis : CLOUDFLARE_API_TOKEN (compte Cloudflare de Fabien, 73c47f96…).
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Un seul déploiement à la fois, jamais annulé en cours de route.
+concurrency:
+  group: deploiement-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Seule la tête de main se déploie : relancer un ancien run remettrait en ligne une
+      # version périmée. Ce run s'arrête alors sans rien toucher.
+      - name: Version = tête de main ?
+        id: tete
+        run: |
+          git fetch --quiet --depth=1 origin main
+          tete=$(git rev-parse FETCH_HEAD)
+          if [ "$tete" = "$GITHUB_SHA" ]; then
+            echo "a_jour=oui" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::$GITHUB_SHA n'est plus la tête de main ($tete) : rien n'est déployé."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.tete.outputs.a_jour == 'oui'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation
+        if: steps.tete.outputs.a_jour == 'oui'
+        run: npm ci
+
+      - name: Déploiement
+        if: steps.tete.outputs.a_jour == 'oui'
+        run: npx wrangler deploy
