@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS antispam_envois;
 DROP TABLE IF EXISTS articles;
 DROP TABLE IF EXISTS medias;
 DROP TABLE IF EXISTS audit_log;

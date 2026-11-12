@@ -18,12 +18,14 @@ export function politiqueSecurite(nonce) {
     "default-src 'self'",
     // googletagmanager : la mesure d'audience, chargee seulement apres accord
     // du visiteur (public/consentement.js). Jamais dans l'espace membres.
-    `script-src 'self' 'nonce-${nonce}' https://*.googletagmanager.com`,
+    // challenges.cloudflare.com : l'anti-robot Turnstile du formulaire de contact.
+    `script-src 'self' 'nonce-${nonce}' https://*.googletagmanager.com https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
     // Le formulaire d'adhesion est servi par HelloAsso dans une iframe.
-    'frame-src https://www.helloasso.com https://helloasso.com',
+    // Le widget Turnstile du formulaire de contact s'affiche aussi dans une iframe.
+    'frame-src https://www.helloasso.com https://helloasso.com https://challenges.cloudflare.com',
     "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
     "object-src 'none'",
     "base-uri 'self'",

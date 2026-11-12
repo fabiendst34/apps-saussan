@@ -1,5 +1,5 @@
 // Pages accessibles a tous : accueil, association, evenements, adhesion, contact, mentions.
-import { esc, richText, html, redirect, uuid, nowIso, field, isEmail, clientIp,
+import { esc, richText, html, redirect, uuid, nowIso, isEmail, clientIp,
          formatDateLong, formatRange, parseDate, todayKey, MOIS_COURTS } from '../lib/util.js';
 import { page, messagesFlash, bandeau, LOGO_SVG } from '../lib/layout.js';
 import { icone, ICONE_CATEGORIE } from '../lib/icones.js';
@@ -9,6 +9,7 @@ import { sendEmail, contactNotificationEmail } from '../lib/email.js';
 import { sectionALaUne } from './articles.js';
 import { calendrierIcs, reponseIcs } from '../lib/flux.js';
 import { jsonLdAssociation } from '../lib/seo.js';
+import { controlerEnvoi } from 'kafe-socle/antispam';
 
 export const CATEGORIES = {
   reunion: 'Réunion',
@@ -347,9 +348,16 @@ export async function adherer(env, url, user) {
 
 // --- Contact ---------------------------------------------------------
 
-export function contact(env, url, user, erreurs = null, valeurs = {}) {
+export function contact(env, url, user, erreurs = null, valeurs = {}, statut = 200) {
   const v = (k) => esc(valeurs[k] || '');
   const err = erreurs ? bandeau('erreur', erreurs) : '';
+  // Anti-robot Cloudflare Turnstile (kafe-socle/antispam) : cle publique du widget
+  // dans wrangler.jsonc (vars.TURNSTILE_SITE_KEY) ; vide = pas de widget.
+  const cleTurnstile = String(env.TURNSTILE_SITE_KEY || '').trim();
+  const turnstile = cleTurnstile
+    ? `<div class="cf-turnstile" data-sitekey="${esc(cleTurnstile)}" data-action="contact" data-appearance="interaction-only" data-language="fr" data-size="flexible"></div>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
+    : '';
 
   const contenu = `
 <section class="section"><div class="conteneur conteneur--etroit">
@@ -360,7 +368,7 @@ export function contact(env, url, user, erreurs = null, valeurs = {}) {
   <div class="grille" style="grid-template-columns:1.4fr .9fr;gap:2rem;margin-top:2rem;align-items:start">
     <div class="carte">
       ${messagesFlash(url)}${err}
-      <form method="post" action="/contact">
+      <form method="post" action="/contact" id="form-contact">
         <div class="duo">
           <div class="champ">
             <label class="champ__label" for="name">Votre nom <span class="champ__requis">*</span></label>
@@ -383,6 +391,8 @@ export function contact(env, url, user, erreurs = null, valeurs = {}) {
           <label for="site">Ne pas remplir</label>
           <input type="text" id="site" aria-describedby="aide-site" name="site" tabindex="-1" autocomplete="off">
         </div>
+        <input type="hidden" name="_duree" value="">
+        ${turnstile}
         <button class="btn btn--principal btn--bloc" type="submit">Envoyer le message</button>
         <p class="champ__aide" style="margin-top:.75rem">Vos coordonnées servent uniquement à vous répondre et ne sont jamais transmises à des tiers.</p>
       </form>
@@ -399,28 +409,55 @@ export function contact(env, url, user, erreurs = null, valeurs = {}) {
     </div>
   </div>
 </div></section>
-<style>@media(max-width:820px){main .grille[style*="1.4fr"]{grid-template-columns:1fr!important}}</style>`;
+<style>@media(max-width:820px){main .grille[style*="1.4fr"]{grid-template-columns:1fr!important}}</style>
+<script>
+  // Delai de saisie : les robots envoient en moins de 3 s (kafe-socle/antispam).
+  // Le formulaire recharge la page a chaque envoi : le widget Turnstile repart
+  // donc toujours d'un jeton neuf (un jeton ne sert qu'une fois).
+  (function () {
+    var f = document.getElementById('form-contact');
+    if (!f) return;
+    var ouvert = Date.now();
+    f.addEventListener('submit', function () { f.elements._duree.value = String(Date.now() - ouvert); });
+  })();
+</script>`;
 
   return html(page({
     titre: 'Contact',
     description: "Contacter l'Association des Parents des Pitchouns Saussannais.",
     canonique: '/contact',
     contenu, user, chemin: '/contact', env,
-  }));
+  }), { status: statut });
 }
 
 export async function contactPost(env, request, url, user) {
   const form = await request.formData();
+  const donnees = Object.fromEntries([...form].filter(([, val]) => typeof val === 'string'));
+  const saisie = (champs, nom, max) => String(champs[nom] ?? '').trim().slice(0, max);
+  const lire = (champs) => ({
+    name: saisie(champs, 'name', 80),
+    email: saisie(champs, 'email', 150),
+    subject: saisie(champs, 'subject', 120),
+    body: saisie(champs, 'body', 4000),
+  });
 
-  // Piege a robots : un champ invisible qui ne doit jamais etre rempli.
-  if (field(form, 'site')) return redirect('/contact?ok=message-envoye');
+  // Champ piege (site), delai de saisie, liens refuses (phishing de novembre 2026),
+  // 5 envois par heure et par IP, Turnstile si TURNSTILE_SECRET_KEY est pose.
+  const a = await controlerEnvoi(request, donnees, {
+    champsTexte: ['name', 'subject', 'body'],
+    liens: 'refuser',
+    domainesAutorises: ['apps-saussan.fr'],
+    secretTurnstile: env.TURNSTILE_SECRET_KEY,
+    db: env.DB,
+    formulaire: 'contact',
+  });
+  if (!a.ok) {
+    // Refus silencieux : le robot croit que tout s'est bien passe.
+    if (a.silencieux) return redirect('/contact?ok=message-envoye');
+    return contact(env, url, user, a.erreur, lire(donnees), a.statut);
+  }
 
-  const valeurs = {
-    name: field(form, 'name', 80),
-    email: field(form, 'email', 150),
-    subject: field(form, 'subject', 120),
-    body: field(form, 'body', 4000),
-  };
+  const valeurs = lire(a.champs);
 
   if (!valeurs.name || !valeurs.body) return contact(env, url, user, 'Merci de renseigner votre nom et votre message.', valeurs);
   if (!isEmail(valeurs.email)) return contact(env, url, user, "L'adresse e-mail saisie n'est pas valide.", valeurs);

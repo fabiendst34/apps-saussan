@@ -143,6 +143,11 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 CREATE INDEX IF NOT EXISTS idx_messages_date ON messages(created_at DESC);
 
+-- Anti-spam du formulaire de contact (kafe-socle/antispam) : envois acceptes
+-- par empreinte d'IP, purges au-dela d'une heure. Copie de kafe-socle/src/antispam.sql.
+CREATE TABLE IF NOT EXISTS antispam_envois (cle TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS antispam_envois_cle ON antispam_envois (cle, created_at);
+
 -- ---------------------------------------------------------------------
 --  Medias : images mises en avant des articles.
 --

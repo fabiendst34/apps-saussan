@@ -1,6 +1,9 @@
 # Déploiement automatique : chaque push sur main est mis en ligne sur Cloudflare.
 #
 # Secret requis : CLOUDFLARE_API_TOKEN (compte Cloudflare de Fabien, 73c47f96…).
+# Secret KAFE_SOCLE_TOKEN : jeton GitHub à grain fin, Contents en lecture sur KafeStudio-dev/kafe-socle seul
+# (dépendance privée, depuis le 12/11/2026 : anti-spam du formulaire de contact). Sans lui, le run s'arrête sur un
+# avertissement sans rien déployer.
 name: Déploiement
 
 on:
@@ -22,6 +25,7 @@ jobs:
     timeout-minutes: 20
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      KAFE_SOCLE_TOKEN: ${{ secrets.KAFE_SOCLE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,16 +42,29 @@ jobs:
             echo "::warning::$GITHUB_SHA n'est plus la tête de main ($tete) : rien n'est déployé."
           fi
 
+      - name: Secret KAFE_SOCLE_TOKEN absent
+        if: steps.tete.outputs.a_jour == 'oui' && env.KAFE_SOCLE_TOKEN == ''
+        run: |
+          echo "::warning::Secret KAFE_SOCLE_TOKEN absent : rien n'est déployé (déployer depuis le poste)."
+
+      - name: Accès à kafe-socle
+        if: steps.tete.outputs.a_jour == 'oui' && env.KAFE_SOCLE_TOKEN != ''
+        run: |
+          git config --global url."https://x-access-token:${KAFE_SOCLE_TOKEN}@github.com/KafeStudio-dev/".insteadOf "https://github.com/KafeStudio-dev/"
+          git config --global --add url."https://x-access-token:${KAFE_SOCLE_TOKEN}@github.com/KafeStudio-dev/".insteadOf "ssh://git@github.com/KafeStudio-dev/"
+          # actions/checkout laisse un en-tête AUTHORIZATION (GITHUB_TOKEN de ce seul dépôt) qui l'emporterait : « not found ».
+          git config --local --unset-all http.https://github.com/.extraheader || true
+
       - uses: actions/setup-node@v4
-        if: steps.tete.outputs.a_jour == 'oui'
+        if: steps.tete.outputs.a_jour == 'oui' && env.KAFE_SOCLE_TOKEN != ''
         with:
           node-version: 22
           cache: npm
 
       - name: Installation
-        if: steps.tete.outputs.a_jour == 'oui'
+        if: steps.tete.outputs.a_jour == 'oui' && env.KAFE_SOCLE_TOKEN != ''
         run: npm ci
 
       - name: Déploiement
-        if: steps.tete.outputs.a_jour == 'oui'
+        if: steps.tete.outputs.a_jour == 'oui' && env.KAFE_SOCLE_TOKEN != ''
         run: npx wrangler deploy
