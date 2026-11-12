@@ -57,7 +57,7 @@
     // docs/ANTISPAM.md du socle) : cle PUBLIQUE du widget ; vide = pas de widget.
     // Le secret correspondant est TURNSTILE_SECRET_KEY (a poser APRES la mise en
     // ligne du widget). En local : --var TURNSTILE_SITE_KEY:<cle de test Cloudflare>.
-    "TURNSTILE_SITE_KEY": ""
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAF98OOzIAWwiyKd1"
   }
 
   // Secrets a poser avec `wrangler secret put` :
